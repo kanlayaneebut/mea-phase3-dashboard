@@ -1,0 +1,668 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Dashboard ติดตามงานจัดระเบียบสายสื่อสาร Phase 3 — MEA</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --mea-blue:#0b3d91; --mea-blue2:#1456c4; --mea-gold:#f5a623;
+  --gray:#9aa3af; --blue:#2563eb; --green:#16a34a; --red:#dc2626; --amber:#d97706;
+  --bg:#f1f5f9; --card:#ffffff; --border:#e2e8f0; --text:#0f172a; --muted:#64748b;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI","Sarabun",Tahoma,sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.5}
+.wrap{max-width:1500px;margin:0 auto;padding:16px}
+header.top{background:linear-gradient(135deg,var(--mea-blue),var(--mea-blue2));color:#fff;border-radius:14px;padding:20px 24px;margin-bottom:16px;box-shadow:0 4px 14px rgba(11,61,145,.25)}
+header.top h1{font-size:20px;font-weight:700;display:flex;align-items:center;gap:10px;flex-wrap:wrap}
+header.top .badge{background:var(--mea-gold);color:#1a1a1a;font-size:11px;font-weight:700;padding:2px 9px;border-radius:20px}
+header.top .meta{opacity:.92;font-size:12.5px;margin-top:6px;display:flex;gap:18px;flex-wrap:wrap}
+header.top .meta b{font-weight:600}
+.toolbar{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:16px;align-items:center}
+.btn{border:1px solid var(--border);background:#fff;color:var(--text);padding:8px 14px;border-radius:9px;font-size:13px;cursor:pointer;font-weight:600;display:inline-flex;align-items:center;gap:6px;transition:.15s}
+.btn:hover{background:#f8fafc;border-color:var(--mea-blue2)}
+.btn.primary{background:var(--mea-blue);color:#fff;border-color:var(--mea-blue)}
+.btn.primary:hover{background:var(--mea-blue2)}
+.btn.gold{background:var(--mea-gold);color:#1a1a1a;border-color:var(--mea-gold)}
+.btn.green{background:var(--green);color:#fff;border-color:var(--green)}
+.hint{color:var(--muted);font-size:12px}
+
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:12px;margin-bottom:18px}
+.kpi{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:14px 16px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.kpi .label{font-size:12px;color:var(--muted);font-weight:600;margin-bottom:6px}
+.kpi .val{font-size:25px;font-weight:800;line-height:1}
+.kpi .sub{font-size:11.5px;color:var(--muted);margin-top:4px}
+.kpi.accent .val{color:var(--mea-blue)} .kpi.red .val{color:var(--red)} .kpi.green .val{color:var(--green)} .kpi.blue .val{color:var(--blue)}
+
+.section{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px;box-shadow:0 1px 3px rgba(0,0,0,.04)}
+.section h2{font-size:16px;font-weight:700;margin-bottom:14px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+.section h2 .tag{font-size:11px;font-weight:600;color:var(--muted);background:var(--bg);padding:2px 8px;border-radius:6px}
+
+.phases{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.pcard{border:1px solid var(--border);border-radius:12px;padding:16px;position:relative;overflow:hidden}
+.pcard::before{content:"";position:absolute;top:0;left:0;width:5px;height:100%}
+.pcard.p1::before{background:var(--blue)} .pcard.p2::before{background:var(--mea-gold)} .pcard.p3::before{background:var(--green)}
+.pcard .ph{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:4px}
+.pcard .ph .name{font-size:15px;font-weight:700}
+.pcard .ph .share{font-size:12px;font-weight:700;color:var(--mea-blue);background:#eef4ff;padding:2px 8px;border-radius:6px}
+.pcard .deadline{font-size:12px;color:var(--muted);margin-bottom:12px}
+.pbar{height:12px;background:var(--bg);border-radius:8px;overflow:hidden;margin:8px 0}
+.pbar > span{display:block;height:100%;border-radius:8px;background:linear-gradient(90deg,var(--mea-blue),var(--mea-blue2))}
+.pcard .pct{font-size:30px;font-weight:800;line-height:1}
+.pcard .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px;font-size:12.5px}
+.pcard .grid2 .box{background:var(--bg);border-radius:8px;padding:8px 10px}
+.pcard .grid2 .box .t{color:var(--muted);font-size:11px}
+.pcard .grid2 .box .v{font-weight:700;font-size:14px;margin-top:2px}
+.kmbar{height:7px;background:#e2e8f0;border-radius:6px;overflow:hidden;margin-top:5px}
+.kmbar>span{display:block;height:100%;background:var(--green)}
+.kmbar.under>span{background:var(--amber)}
+
+table{width:100%;border-collapse:collapse;font-size:13px}
+th,td{padding:9px 10px;text-align:center;border-bottom:1px solid var(--border)}
+th{background:var(--bg);font-weight:700;font-size:12px;color:var(--muted)}
+td.l,th.l{text-align:left}
+.mcell{font-weight:700;border-radius:6px;padding:4px 0;display:inline-block;min-width:44px}
+.scrollx{overflow-x:auto}
+
+.msprog .row{display:grid;grid-template-columns:240px 1fr 130px;align-items:center;gap:14px;padding:7px 0}
+.msprog .row .lbl{font-size:13px}
+.msprog .row .lbl b{font-weight:700;color:var(--mea-blue);margin-right:6px}
+.msprog .row .lbl .wt{font-size:11px;color:#94a3b8;margin-left:5px}
+.msprog .track{height:16px;background:#eef2f7;border-radius:10px;overflow:hidden}
+.msprog .track>span{display:block;height:100%;border-radius:10px;background:linear-gradient(90deg,#0e9e8a,#16b89f);transition:width .4s}
+.msprog .track>span.zero{background:#cbd5e1}
+.msprog .num{text-align:right;font-weight:700;font-size:13px}
+.msprog .num small{color:#94a3b8;font-weight:600}
+@media(max-width:640px){.msprog .row{grid-template-columns:1fr;gap:4px}.msprog .num{text-align:left}}
+
+.site .mxrow{cursor:pointer}
+.site .mxrow:hover td, table#matrix tr.mxrow:hover td{background:#eef4ff}
+#matrix tr.mxrow{cursor:pointer}
+#matrix tr.mxrow:hover td{background:#eef4ff!important}
+.mxgo{font-size:10px;color:var(--mea-blue2);font-weight:600;opacity:0;transition:.15s;background:#eef4ff;padding:1px 6px;border-radius:10px}
+#matrix tr.mxrow:hover .mxgo{opacity:1}
+.section.flash{animation:flashbg 1.1s ease}
+@keyframes flashbg{0%{box-shadow:0 0 0 3px var(--mea-gold)}100%{box-shadow:0 1px 3px rgba(0,0,0,.04)}}
+.batch{display:grid;grid-template-columns:repeat(auto-fit,minmax(290px,1fr));gap:14px}
+.bcard{background:var(--bg);border:1px solid var(--border);border-radius:12px;padding:16px;border-top:4px solid var(--mea-blue)}
+.bcard.b1{border-top-color:var(--blue)} .bcard.b2{border-top-color:var(--mea-gold)} .bcard.b3{border-top-color:var(--green)}
+.bcard h3{font-size:15px;font-weight:700;color:var(--mea-blue);margin-bottom:10px}
+.bcard .sum{display:flex;justify-content:space-between;font-size:13px;padding:4px 0;border-bottom:1px solid var(--border)}
+.bcard .sum b{font-weight:700}
+.bcard .sum.tot{border-bottom:2px solid var(--border);margin-bottom:6px}
+.bcard .rl{max-height:280px;overflow:auto;margin-top:8px}
+.bcard .ri{display:flex;justify-content:space-between;gap:8px;font-size:12px;padding:4px 2px;border-bottom:1px dashed #e2e8f0}
+.bcard .ri:hover{background:#fff;border-radius:5px}
+.bcard .ri .nm{color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bcard .ri .nm .no{color:#94a3b8;font-size:11px;margin-right:5px}
+.bcard .ri .km{color:var(--muted);font-weight:600;white-space:nowrap;flex-shrink:0}
+.bcard .ri .dot{display:inline-block;width:7px;height:7px;border-radius:50%;margin-right:5px;vertical-align:middle}
+
+.filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
+.filters select,.filters input{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:inherit}
+.statuspill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;display:inline-block}
+.s-none{background:#f1f5f9;color:#475569} .s-survey{background:#e0f2fe;color:#0369a1}
+.s-install{background:#dbeafe;color:#1d4ed8} .s-done{background:#dcfce7;color:#15803d} .s-late{background:#fee2e2;color:#b91c1c}
+
+.topscroll{overflow-x:auto;overflow-y:hidden;height:14px;margin-bottom:2px}
+.topscroll #topscrollInner{height:1px}
+.topscroll::-webkit-scrollbar{height:12px}
+.topscroll::-webkit-scrollbar-thumb{background:#94a3b8;border-radius:6px}
+.topscroll::-webkit-scrollbar-thumb:hover{background:#64748b}
+.topscroll::-webkit-scrollbar-track{background:#eef2f7;border-radius:6px}
+.sitewrap{overflow:auto;max-height:640px;border:1px solid var(--border);border-radius:10px}
+.site{border-collapse:separate;border-spacing:0;font-size:12px;min-width:1750px}
+.site th,.site td{border-bottom:1px solid var(--border);border-right:1px solid var(--border);padding:5px 7px;white-space:nowrap}
+.site thead th{position:sticky;top:0;z-index:4;background:#1e3a8a;color:#fff;font-size:11px;text-align:center;vertical-align:middle}
+.site thead tr:nth-child(2) th{top:72px}
+.site thead tr:nth-child(3) th{top:104px}
+.site .grp-survey{background:#0e7490!important}
+.site .grp-design{background:#b45309!important}
+.site .grp-install{background:#1d4ed8!important}
+.site .grp-cat{background:#6d28d9!important}
+.site .wt{display:block;font-size:10px;font-weight:600;opacity:.8;margin-top:1px}.site .hpct{display:block;font-size:11px;font-weight:800;margin-top:3px;background:rgba(255,255,255,.28);border-radius:5px;padding:2px 3px}.site .hpct .hl{font-size:9px;font-weight:600;opacity:.85;display:block;line-height:1}
+.site tbody td{background:#fff;text-align:center}
+.site tbody td.l{text-align:left}
+.site tbody .sticky0{position:sticky;left:0;z-index:2;background:#fff;box-shadow:1px 0 0 var(--border)}
+.site tbody .sticky1{position:sticky;left:46px;z-index:2;background:#fff;min-width:230px;box-shadow:1px 0 0 var(--border)}
+.site thead .sticky0{z-index:6;background:#1e3a8a;left:0}
+.site thead .sticky1{z-index:6;background:#1e3a8a;left:46px}
+.site tbody tr:hover td{background:#f1f7ff}
+.site tbody tr:hover td.sticky0,.site tbody tr:hover td.sticky1{background:#f1f7ff}
+.site input[type=date]{border:1px solid transparent;border-radius:5px;font-size:11px;padding:2px 3px;width:110px;background:transparent;font-family:inherit;cursor:pointer}
+.site input[type=date]:hover{border-color:var(--border);background:#fff}
+.site input[type=date]:focus{border-color:var(--mea-blue2);background:#fff;outline:none}
+.site input.num{width:46px;text-align:center;border:1px solid transparent;border-radius:5px;padding:2px;font-family:inherit}
+.site input.num:hover{border-color:var(--border)}
+.site input.num:focus{border-color:var(--mea-blue2);outline:none}
+.site .pctcell{font-weight:800}
+.editbadge{font-size:11px;color:var(--green);font-weight:700}
+
+.gantt{position:relative;border:1px solid var(--border);border-radius:10px;padding:0;overflow-x:auto}
+.gantt table{font-size:12px}
+.gantt .barcell{position:relative;height:30px;padding:0}
+.gbar{position:absolute;height:18px;top:6px;border-radius:5px;opacity:.92}
+.today{position:absolute;top:0;bottom:0;width:2px;background:var(--red);z-index:5}
+.milestone-dot{position:absolute;top:6px;width:11px;height:11px;border-radius:50%;background:var(--mea-gold);border:2px solid #fff;z-index:6}
+.gantt .barcell{height:44px}
+.gdate{position:absolute;top:24px;font-size:10.5px;font-weight:700;color:#92560a;background:#fff6e6;border:1px solid #f5c97a;border-radius:6px;padding:1px 6px;white-space:nowrap;z-index:7;box-shadow:0 1px 2px rgba(0,0,0,.08)}
+.gdate.right{transform:translateX(4px)}
+.gdate.left{transform:translateX(-100%) translateX(-8px)}
+footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
+@media(max-width:640px){.kpi .val{font-size:22px}.pcard .pct{font-size:24px}header.top h1{font-size:17px}}
+
+/* ---- print / PDF ---- */
+@media print{
+  @page{ size:A4 landscape; margin:10mm; }
+  body{ background:#fff!important; font-size:10px; -webkit-print-color-adjust:exact; print-color-adjust:exact; }
+  .wrap{ max-width:100%!important; padding:0!important; }
+  .toolbar, .filters{ display:none!important; }
+  .editbadge{ display:none!important; }
+  header.top{ box-shadow:none; border-radius:8px; }
+  .section{ box-shadow:none; border:1px solid #ccc; break-inside:avoid; page-break-inside:avoid; margin-bottom:10px; }
+  .kpi, .pcard, .bcard{ box-shadow:none; break-inside:avoid; }
+  .kpis{ break-inside:avoid; }
+  .phases, .batch{ break-inside:avoid; }
+  /* show all rows in site table (no inner scroll) */
+  .sitewrap{ max-height:none!important; overflow:visible!important; border:none; }
+  .bcard .rl{ max-height:none!important; overflow:visible!important; }
+  /* turn date inputs into plain text for clean print */
+  .site input[type=date], .site input.num{ border:none!important; background:transparent!important; -webkit-appearance:none; appearance:none; }
+  .site input[type=date]::-webkit-calendar-picker-indicator{ display:none!important; }
+  .site input[type=date]:in-range::-webkit-datetime-edit, .site input[type=date]::-webkit-datetime-edit{ color:#000; }
+  .site input[type=date][value=""]{ color:transparent!important; }
+  .site input.num{ width:auto; }
+  .gantt, .scrollx{ overflow:visible!important; }
+  .section h2 .tag{ background:#eee!important; }
+  a[href]:after{ content:""; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <h1>📡 Dashboard ติดตามงานจัดระเบียบสายสื่อสาร <span class="badge">Phase 3</span></h1>
+    <div class="meta">
+      <span><b>เจ้าของงาน:</b> การไฟฟ้านครหลวง (MEA)</span>
+      <span><b>สัญญา:</b> ID7-4638-TGA</span>
+      <span><b>ขอบเขต:</b> 174 เส้นทาง / 401.15 กม.</span>
+      <span><b>ลงนาม:</b> 27 เม.ย. 2569</span>
+      <span><b>สิ้นสุดสัญญา:</b> 22 เม.ย. 2570</span>
+    </div>
+  </header>
+
+  <div class="toolbar">
+    <label class="btn primary" for="fileUp">⬆️ นำเข้า Excel
+      <input id="fileUp" type="file" accept=".xlsx,.xls" style="display:none">
+    </label>
+    <button class="btn gold" onclick="exportExcel()">⬇️ ส่งออก Excel (โครงสร้างเดิม)</button>
+    <button class="btn green" onclick="saveLocal()">💾 บันทึกการกรอก (ในเครื่อง)</button>
+    <button class="btn" onclick="window.print()" style="border-color:var(--mea-blue);color:var(--mea-blue)">🖨️ พิมพ์ / บันทึก PDF</button>
+    <span class="hint" id="dataSrc"></span>
+  </div>
+
+  <div class="kpis" id="kpis"></div>
+
+  <div class="section">
+    <h2>การ์ดสรุป 3 งวดงาน <span class="tag">% เฉลี่ยรายเส้นทาง + ระยะทางสะสมเทียบเป้า</span></h2>
+    <div class="phases" id="phases"></div>
+  </div>
+
+  <div class="section">
+    <h2>แบ่งตามงวดงาน (Phase Batch) <span class="tag">รายการเส้นทางในแต่ละงวด</span></h2>
+    <div class="batch" id="batch"></div>
+  </div>
+
+  <div class="section">
+    <h2>Timeline / Gantt <span class="tag">พ.ค. 2569 → เม.ย. 2570</span></h2>
+    <div class="gantt" id="gantt"></div>
+  </div>
+
+  <div class="section">
+    <h2>ความคืบหน้าตาม Milestone (MS) / Sub MS <span class="tag">นับเส้นทางที่ผ่านแต่ละขั้น</span></h2>
+    <div id="msProgress" class="msprog"></div>
+  </div>
+
+  <div class="section">
+    <h2>Milestone Matrix <span class="tag">แถว = งวด · คอลัมน์ = ขั้นถ่วงน้ำหนัก (รวม 100%)</span> <span class="tag" style="color:var(--mea-blue2)">👆 คลิกแถวงวดเพื่อกรองตารางรายเส้นทาง</span></h2>
+    <div class="scrollx"><table id="matrix"></table></div>
+    <p class="hint" style="margin-top:8px">Survey เป็นงานเตรียม (น้ำหนัก 0%) แสดงแยกเป็นตัวชี้วัดความพร้อม · % ในแต่ละช่อง = สัดส่วนเส้นทางในงวดที่ผ่านขั้นนั้นแล้ว</p>
+  </div>
+
+  <div class="section">
+    <h2>รายเส้นทาง — Site Detail <span class="tag" id="rowcount"></span> <span class="editbadge">✎ คลิกช่องวันที่/จำนวนเพื่อกรอกได้เลย</span></h2>
+    <div class="filters">
+      <select id="fPhase"><option value="">ทุกงวด</option><option value="1">งวด 1</option><option value="2">งวด 2</option><option value="3">งวด 3</option></select>
+      <select id="fDistrict"><option value="">ทุกเขต</option></select>
+      <select id="fController"><option value="">ทุกผู้ควบคุม</option></select>
+      <select id="fStatus"><option value="">ทุกสถานะ</option><option>ยังไม่เริ่ม</option><option>กำลังสำรวจ</option><option>กำลังติดตั้ง</option><option>เสร็จสมบูรณ์</option><option value="late">ล่าช้า (ติดธงแดง)</option></select>
+      <input id="fSearch" placeholder="🔍 ค้นหาเส้นทาง / เขต / ผู้ควบคุมงาน..." style="min-width:240px">
+    </div>
+    <div class="topscroll" id="topscroll"><div id="topscrollInner"></div></div>
+    <div class="sitewrap" id="sitewrap"><table class="site" id="site"></table></div>
+    <p class="hint" style="margin-top:8px">ผู้ดูแลกรอกได้โดยตรง: ใส่วันที่ในแต่ละขั้น → ระบบคิด % และสถานะให้อัตโนมัติ · กด 💾 เพื่อบันทึกในเครื่อง หรือ ⬇️ ส่งออกเป็น Excel โครงสร้างเดิม</p>
+  </div>
+
+  <footer>
+    ข้อมูลนำเข้าจากไฟล์ "ติดตามสถานะการทำงาน โครงการจัดระเบียบสายสื่อสาร 3 MEA" (sheet Update Progress)<br>
+    การส่งมอบแต่ละงวดผูกกับ "เส้นทางเสร็จทั้งเส้น" (ระยะทางสะสม ≥120 / ≥240 / 400 กม.) — % เฉลี่ยใช้ดูภาพรวมเท่านั้น
+  </footer>
+</div>
+
+<script>
+const TODAY = new Date(2026,5,21);
+const CONTRACT_END = new Date(2027,3,22);
+const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:5, cat:5};
+const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"ADSS OFC", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
+const MS_ORDER = ["submit","approve","adss","inspect","cutover","removal","cat"];
+const MS_GROUP = {submit:"MS2",approve:"MS2",adss:"MS3",inspect:"MS3",cutover:"MS3",removal:"MS3",cat:"CAT"};
+const PHASE_META = {
+  1:{name:"งวดที่ 1", deadline:"24 ต.ค. 2569", deadlineDate:new Date(2026,9,24), share:30, cumTarget:120},
+  2:{name:"งวดที่ 2", deadline:"22 ม.ค. 2570", deadlineDate:new Date(2027,0,22), share:30, cumTarget:240},
+  3:{name:"งวดที่ 3", deadline:"22 เม.ย. 2570", deadlineDate:new Date(2027,3,22), share:40, cumTarget:400}
+};
+const fmt = n => (n||0).toLocaleString('th-TH',{maximumFractionDigits:2});
+
+let ROUTES = [{"id":1,"name":"ถนนศรีเวียง(ถนนจรูญเวียง - ถนนประมวญ)","district":"คลองเตย","km":0.8,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":2,"name":"ซอยสุขุมวิท 93(ถนนสุขุมวิท - โรงเรียนวัดราษฎร์ศรัทธาราม)","district":"บางกะปิ","km":4.2,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-10","survey_start":"2026-06-10","survey_end":"2026-06-10","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":3,"name":"ถนนมหาพฤฒาราม(ถนนพระราม 4 - ถนนเจริญกรุง)","district":"คลองเตย","km":1.4,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"2026-06-18","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":4,"name":"ถนนบำรุงเมือง(สะพานกษัตริย์ศึก - แยกเมรุปูน)","district":"วัดเลียบ","km":2.6,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-20","survey_start":"2026-05-20","survey_end":"2026-05-23","submit":"2026-05-29","rev0":"2026-06-08","rev1":"","rev2":"","rev3":"","adss_plan":2.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":5,"name":"ถนนสันติภาพ(ถนนพลับพลาไชย - ถนนกรุงเกษม)","district":"วัดเลียบ","km":1.2,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-23","survey_start":"2026-05-23","survey_end":"2026-05-23","submit":"2026-05-29","rev0":"2026-06-08","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":6,"name":"ถนนยุคล 1(ถนนบำรุงเมือง - ถนนพลับพลาไชย)","district":"วัดเลียบ","km":0.9,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-21","survey_start":"2026-05-21","survey_end":"2026-05-21","submit":"2026-05-29","rev0":"2026-06-08","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":7,"name":"ถนนทรงสวัสดิ์(ถนนทรงวาด - ถนนเจริญกรุง)","district":"วัดเลียบ","km":0.9,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-19","survey_start":"2026-05-19","survey_end":"2026-05-19","submit":"2026-06-08","rev0":"2026-06-12","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":8,"name":"ถนนแปลงนาม(ถนนเจริญกรุง - ถนนเยาวราช)","district":"วัดเลียบ","km":0.38,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-19","survey_start":"2026-05-19","survey_end":"2026-05-19","submit":"2026-06-08","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.38,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":9,"name":"ถนนมหาจักร(ถนนหลวง - ถนนอนุวงศ์)","district":"วัดเลียบ","km":2.0,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-22","survey_start":"2026-05-22","survey_end":"2026-05-22","submit":"2026-06-08","rev0":"2026-06-12","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":10,"name":"ถนนข้าวหลาม(ถนนทรงวาด - ถนนมหาพฤฒาราม)","district":"วัดเลียบ","km":0.6,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-08","survey_start":"2026-06-08","survey_end":"2026-06-08","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":11,"name":"ซอยสาทร 11(ต้นซอยสาทร 11 - ถนนจันทร์)","district":"ยานนาวา","km":3.4,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-15","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":12,"name":"ถนนวานิช 1 (ถนนทรงสวัสดิ์-ถนนเยาวพานิช) 2 ฝั่ง","district":"วัดเลียบ","km":0.6,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"2026-06-12","rev0":"2026-06-15","rev1":"","rev2":"","rev3":"","adss_plan":0.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":13,"name":"ถนนเจ้าคำรบ(ถนนพลับพลาไชย-ถนนวรจักร) 2 ฝั่ง","district":"วัดเลียบ","km":1.0,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-23","survey_start":"2026-05-23","survey_end":"2026-05-23","submit":"2026-06-12","rev0":"2026-06-15","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":14,"name":"ถนนพระรามที่ 6(ถนนเพรชบุรี - ถนนพระรามที่1)","district":"สามเสน","km":1.9,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":15,"name":"ซอยอินทามระ 37 (1)(ถนนสุทธิสารวินิจฉัย-สุดซอยอินทามระ 37 (1))","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":16,"name":"ถนนทรัพย์(ถนนศรีพระยา - ถนนสุรวงศ์)","district":"คลองเตย","km":0.8,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-02","survey_start":"2026-06-02","survey_end":"2026-06-02","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":17,"name":"ถนนศรีเวียง(ถนนจรูญเวียง - ถนนเจริญกรุง)","district":"คลองเตย","km":0.46,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.46,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":18,"name":"ถนนมิตรพันธ์(ถนนเจริญกรุง - ถนนหลวง)","district":"วัดเลียบ","km":1.5,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-23","survey_start":"2026-05-23","survey_end":"2026-05-23","submit":"2026-06-12","rev0":"2026-06-15","rev1":"","rev2":"","rev3":"","adss_plan":1.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":19,"name":"ถนนหลวง(ถนนมหาไชย - ถนนกรุงเกษม)","district":"วัดเลียบ","km":2.8,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-22","survey_start":"2026-05-22","survey_end":"2026-05-22","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":20,"name":"ซอยสวนมะลิ 1(ถนนบำรุงเมือง - ถนนหลวง)","district":"วัดเลียบ","km":0.9,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"2026-06-08","rev0":"2026-06-12","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":21,"name":"ถนนราชวงศ์(ถนนทรงวาด - ถนนเจริญกรุง)","district":"วัดเลียบ","km":1.2,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-25","survey_start":"2026-05-25","survey_end":"2026-05-25","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":22,"name":"ถนนโยธา(วงเวียนตลาดน้อย - ถนนเจริญกรุง)","district":"วัดเลียบ","km":0.24,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-08","survey_start":"2026-06-08","survey_end":"2026-06-08","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.24,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":23,"name":"ซอยเจริญกรุง12 (ถนนเจริญกรุง - ถนนเยาวราช)","district":"วัดเลียบ","km":0.34,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.34,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":24,"name":"ถนนประชาสุข(ถนนสุทธิสารวินิจฉัย - ซอยเพิ่มสิน)","district":"สามเสน","km":2.4,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":25,"name":"ถนนอินทามระ22(ถนนสุทธิสารวินิจฉัย - ถนนประชาสงเคราะห์)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":26,"name":"ถนนดินแดง 1(Bangkok Relax Message - ห้างหุ้นส่วนจำกัด นาโน ซิสเต็มส์ 693 อโศก)","district":"สามเสน","km":1.5,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":27,"name":"ถนนรางน้ำ(ถนนพญาไท - ถนนราชปรารภ)","district":"สามเสน","km":0.7,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":28,"name":"ซอยราชวิถี 9(ถนนราชวิถี - ถนนรางน้ำ)","district":"สามเสน","km":0.9,"controller":"เมธวัจน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":29,"name":"ซอยศรีอยุธยา 12(ถนนรางน้ำ - ถนนศรีอยุธยา)","district":"สามเสน","km":0.8,"controller":"เมธวัจน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":30,"name":"ซอยสวนอ้อย(ถนนสามเสน - ถนนนคราชสีมา)","district":"สามเสน","km":0.8,"controller":"เมธวัจน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":31,"name":"ถนนสวนพลู(ถนนสาทรใต้ - ถนนนางลิ้นจี่)","district":"ยานนาวา","km":2.0,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-05","survey_start":"2026-06-05","survey_end":"2026-06-05","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":32,"name":"ถนนเย็นจิต (ต้นซอย - ซอยเย็นจิต 7)","district":"ยานนาวา","km":1.2,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-20","survey_start":"2026-05-20","survey_end":"2026-05-21","submit":"2026-05-29","rev0":"2026-06-04","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":1.2,"adss_start":"2026-06-10","adss_end":"2026-06-10","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"2026-06-15","meacheck_end":"","cat":"","note":""},{"id":33,"name":"ถ. ทางรถไฟสายเก่าปากน้ำ (สี่แยกถนนสรรพาวุธ- สุดเขต กทม.)","district":"บางนา","km":4.0,"controller":"จตุรงค์ (จ)","phase":1,"survey_plan":"2026-05-25","survey_start":"2026-05-25","survey_end":"2026-05-25","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":34,"name":"ถ. ทางรถไฟสายเก่าปากน้ำ (คลองพระโขนง - สี่แยกถ.สรรพาวุธ) 2 ฝั่ง","district":"บางนา","km":7.0,"controller":"จตุรงค์ (จ)","phase":1,"survey_plan":"2026-05-21","survey_start":"2026-05-21","survey_end":"2026-05-21","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":35,"name":"ถ. ทางรถไฟสายเก่าปากน้ำ (หลักเขตสมุทรปราการ - คลองสำโรง)","district":"บางนา","km":4.0,"controller":"จตุรงค์ (จ)","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":36,"name":"ซอยสุขุมวิท 22 (ถนนสุขุมวิท - ซอยสุขุมวิท 24)","district":"คลองเตย","km":1.3,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":37,"name":"ซอยไผ่สิงห์โต (ถนนพระราม 4 - ซอยสุขุมวิท 16)","district":"คลองเตย","km":1.8,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":38,"name":"ซอยสุขุมวิท 16 (ถนนรัชดาภิเษก - ซอยสุขุมวิท 22)","district":"คลองเตย","km":2.8,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":39,"name":"ซอยพหลโยธิน 11 (ถนนพหลโยธิน - ซอยประดิพัทธ์ 4)","district":"สามเสน","km":2.2,"controller":"เมธวัจน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":40,"name":"ซอยสุขุมวิท 39(ถนนสุขุมวิท - คลองแสนแสบ)","district":"บางกะปิ","km":3.8,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-12","survey_start":"2026-06-12","survey_end":"2026-06-12","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":41,"name":"ซอยสุขุมวิท 20 (ถนนสุขมวิท - ซอยน้ำทิพย์ 1)","district":"คลองเตย","km":1.4,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":42,"name":"ซอยสุขุมวิท 49(ถนนสุขุมวิท - สุดซอยสุขุมวิท 49)","district":"บางกะปิ","km":4.4,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-11","survey_start":"2026-06-11","survey_end":"2026-06-11","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":43,"name":"ซอยสุขุมวิท 18 (ถนนสุขมวิท - สุดซอยสุขุมวิท 18)","district":"คลองเตย","km":1.1,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":44,"name":"ซอยประดิพัทธิ์ 4 (ถนนประดิพัทธิ์ - ถนนพระรามที่ 6 ซอย 30)","district":"สามเสน","km":2.4,"controller":"เมธวัจน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":45,"name":"ซอยสุขุมวิท 24 (ถนนสุขุมวิท - ถนนพระราม 4)","district":"คลองเตย","km":2.0,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":46,"name":"ถนนเกษมราษฎร์(ถนนพระราม 4 - กรมศุลกากร)","district":"คลองเตย","km":1.7,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":47,"name":"ซอยวิภาวดีรังสิต 16(ถนนวิภาวดีรังสิต - ซอยรัชดาภิเษก 19)","district":"บางเขน","km":1.6,"controller":"จิรวัฒน์","phase":1,"survey_plan":"2026-06-08","survey_start":"2026-06-08","survey_end":"2026-06-08","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":48,"name":"ซอยโชคชัยร่วมมิตร (ถนนวิภาวดีรังสิต - ซอยลาดพร้าว18แยก3)","district":"บางเขน","km":4.0,"controller":"จิรวัฒน์","phase":1,"survey_plan":"2026-06-08","survey_start":"2026-06-08","survey_end":"2026-06-08","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":49,"name":"ซอยท่านหญิงพวงรัตน์ประไพ (ซอยสุขุมวิท 26 - สุดซอยท่านหญิงพวงรัตน์ประไพ) 1 ฝั่ง","district":"คลองเตย","km":1.2,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-09","survey_start":"2026-06-09","survey_end":"2026-06-09","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":50,"name":"ถนนมหรรณพ (ถนนตะนาว - ถนนดินสอ)","district":"วัดเลียบ","km":0.56,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"2026-06-18","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.56,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":51,"name":"ถนนบางกระดี่ (ถนนพระรามสอง-คลองสนามชัย) 2ฝั่ง","district":"ราษฏร์บูรณะ","km":7.2,"controller":"จตุรงค์ (ม)","phase":1,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":7.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":52,"name":"ถนนโชคชัย 4 (ถนนลาดพร้าว-ถนนโชคชัย 4 แยก 84)","district":"นวลจันทร์","km":3.71,"controller":"ธนรัตน์","phase":1,"survey_plan":"2026-06-18","survey_start":"2026-06-18","survey_end":"2026-06-18","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.71,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":53,"name":"ซอยอัครภัทร(ซอยสุขุมวิท 55 - ซอยสุขุมวิท 49) (ซ้ำ AR66/BKK/UR2/0267)","district":"บางกะปิ","km":1.2,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-11","survey_start":"2026-06-11","survey_end":"2026-06-11","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":54,"name":"ถนนวิชิรธรรมสาธิต 57(ถนนวิชิรธรรมสาธิต - ซอยอ่อนนุช 44)","district":"บางกะปิ","km":5.6,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-10","survey_start":"2026-06-10","survey_end":"2026-06-10","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":5.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":55,"name":"ซอยพร้อมจิต (ซอยพร้อมพรรค - ซอยสวัสดี)","district":"บางกะปิ","km":2.8,"controller":"อนันตเดช","phase":1,"survey_plan":"2026-06-12","survey_start":"2026-06-12","survey_end":"2026-06-12","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":56,"name":"ซอยสุขุมวิท 26 (ถนนสุขุมวิท - ถนนพระรามที่ 4) 1 ฝั่ง","district":"คลองเตย","km":3.0,"controller":"รัชพนธ์","phase":1,"survey_plan":"2026-06-10","survey_start":"2026-06-10","survey_end":"2026-06-10","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":57,"name":"ถนนสวนสยาม (ถนนรามอินทรา - ถนนเสรีไทย) 2 ฝั่ง","district":"มีนบุรี","km":4.8,"controller":"ธนรัตน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":58,"name":"ซอยสหการประมูล (ถนนประชาอุทิศ - สุดซอยสหการประมูล) 1 ฝั่ง","district":"นวลจันทร์","km":1.0,"controller":"ธนรัตน์","phase":1,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":59,"name":"ซอยระนอง 1 (ถนนพระรามที่ 5 - ถนนพระรามที่ 6)","district":"สามเสน","km":1.8,"controller":"เมธวัจน์","phase":1,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":60,"name":"ซอยเจริญกรุง 42 (ต้นซอยเจริญกรุง 42 - ถนนสาทรเหนือ)","district":"คลองเตย","km":1.1,"controller":"รัชพนธ์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":61,"name":"ซอยร่วมฤดี (ถนนเพลินจิต - ถนนวิทยุ)","district":"คลองเตย","km":2.4,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":62,"name":"ถนนประชาชื่น -เลียบคลองปะปา (คลองบางเขน - แยกศรีสมาน) 1ฝั่ง","district":"นนทบุรี","km":10.0,"controller":"จิรวัฒน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":10,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":63,"name":"ซอยสาทร 1(ต้นซอย - ซอยงามดูพลี)","district":"คลองเตย","km":1.1,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-05-26","survey_start":"2026-05-26","survey_end":"2026-05-26","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":64,"name":"ถนนเสือป่า(ถนนหลวง - ถนนเจริญกรุง)","district":"วัดเลียบ","km":0.9,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-26","survey_start":"2026-05-26","survey_end":"2026-05-26","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":65,"name":"ถนนพลับพลาไชย(ถนนหลวง - ถนนเจริญกรุง)","district":"วัดเลียบ","km":1.1,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-28","survey_start":"2026-05-28","survey_end":"2026-05-28","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":66,"name":"ถนนยุคล 2(ถนนบำรุงเมือง - ถนนหลวง)","district":"วัดเลียบ","km":0.7,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-06-01","survey_start":"2026-06-01","survey_end":"2026-06-01","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":67,"name":"ถนนมังกร(ถนนเจริญกรุง - ถนนทรงวาด)","district":"วัดเลียบ","km":2.0,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-26","survey_start":"2026-05-26","survey_end":"2026-05-26","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":68,"name":"ถนนอนุวงศ์(ถนนราชวงศ์ - ถนนมหาจักร)","district":"วัดเลียบ","km":0.4,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-27","survey_start":"2026-05-27","survey_end":"2026-05-27","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":69,"name":"ถนนเยาวพานิช(ถนนเยาวราช - ถนนทรงวาด)","district":"วัดเลียบ","km":0.7,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-06-01","survey_start":"2026-06-01","survey_end":"2026-06-01","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":70,"name":"ซอยนราธิวาสราชนครินทร์ 17 (ถนนนราธิวาสราชนครินทร์ - ถนนพระราม 4)","district":"ยานนาวา","km":4.0,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-17","survey_start":"2026-06-17","survey_end":"2026-06-17","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":71,"name":"ซอยจันทร์ 32(ต้นซอย - ซอยวัดปรก 1)","district":"ยานนาวา","km":1.3,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-18","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":72,"name":"ซอยสาทร 13(ต้นซอย - ซอยสาทร 11)","district":"ยานนาวา","km":0.7,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-15","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"2026-06-16","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":73,"name":"ถนนพาดสาย (ถนนทรงสวัสดิ์-ถนนเยาวพานิช) 2 ฝั่ง","district":"วัดเลียบ","km":0.52,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-19","survey_start":"2026-05-19","survey_end":"2026-05-19","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.52,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":74,"name":"ถนนคลองวัดพิเรนทร์(ถนนวรจักร-ถนนบริพัตร) 2 ฝั่ง","district":"วัดเลียบ","km":0.5,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-29","survey_start":"2026-05-29","survey_end":"2026-05-29","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":75,"name":"ถนนดำรงรักษ์ (ถนนกรุงเกษม-ถนนราชดำเนินนอก) 2 ฝั่ง","district":"วัดเลียบ","km":2.2,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-05-29","survey_start":"2026-05-29","survey_end":"2026-05-29","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":76,"name":"ซอยงามดูพลี (ถนนพระรามที่ 4 - ซอยสาทร 3)","district":"คลองเตย","km":2.8,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-05-29","survey_start":"2026-05-29","survey_end":"2026-05-29","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":77,"name":"ซอยเย็นอากาศ(ถนนนางลิ้นจี่ - ซอยศรีบำเพ็ญ)","district":"คลองเตย","km":2.6,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-04","survey_start":"2026-06-04","survey_end":"2026-06-04","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":78,"name":"ถนนประชาสงเคราะห์(ถนนดินแดง - ถนนประชาสงเคราะห์ ตลาดห้วยขวาง)","district":"สามเสน","km":5.8,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":5.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":79,"name":"ซอยอินทมาระ 22(ถนนสุทธิสารวินิจฉัย - ซอยอินทมาระ 40)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":80,"name":"ซอยข้างสถานฑูตจีน (ซอยมารวย1 - ถนนรัชดาภิเษก)","district":"สามเสน","km":1.3,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":81,"name":"ซอยเพิ่มสิน (ถนนประชาสงเคราะห์ - ถนนประชาสงเคราะห์45)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":82,"name":"ซอยประชาสงเคราะห์14 (ถนนประชาสงเคราะห์ - ซอยประชาสงเคราะห์28)","district":"สามเสน","km":1.7,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":83,"name":"ซอยประชาสงเคราะห์28 (ถนนประชาสงเคราะห์ - ซอยประชาสงเคราะห์14)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":84,"name":"ซอยสันติ(ถนนอินทามาระ22 - ถนนรัชดาภิเษก)","district":"สามเสน","km":2.2,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":85,"name":"ซอยชานเมือง (ซอยประชาสงเคราะห์28 - ซอยรัชดาภิเษก7)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":86,"name":"ซอยรัชดาภิเษก7 (ซอยเปรมสมบัติ - ซอยรัชดาภิเษก)","district":"สามเสน","km":1.2,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":87,"name":"ซอยสมปรารถนา(ซอยประชาสงเคราะห์14 - บริษัท เฮลท์แลนด์พร็อพเพอร์ตี้ดีเวล็อปเม้นท์ จำกัด)","district":"สามเสน","km":0.9,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":88,"name":"ถนนพาหุรัด(ถนนจักรเพชร - ถนนอัษฎางค์)","district":"วัดเลียบ","km":1.3,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-06-02","survey_start":"2026-06-02","survey_end":"2026-06-02","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":89,"name":"ซอยเจริญราษฎร์ 1 (ต้นซอย - ซอยสาทร 11)","district":"ยานนาวา","km":2.2,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-15","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":90,"name":"ซอยเจริญราษฎร์ 3 (ต้นซอย - ซอยจันทร์ 18/7)","district":"ยานนาวา","km":1.6,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-18","survey_start":"2026-06-18","survey_end":"2026-06-18","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":91,"name":"ซอยจันทร์ 43 (ต้นซอย - ซอยจันทร์ 35)","district":"ยานนาวา","km":1.0,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-18","survey_start":"2026-06-18","survey_end":"2026-06-18","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":92,"name":"ซอยสุขุมวิท 4(ถนนสุขุมวิท - สุดซอยสุขุมวิท 4)","district":"คลองเตย","km":1.8,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":93,"name":"ซอยสุขุมวิท 40(ถนนสุขมวิท - ถนนพระราม 4)","district":"คลองเตย","km":2.0,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-05","survey_start":"2026-06-05","survey_end":"2026-06-05","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":94,"name":"ซอยสุขุมวิท 42(ถนนสุขมวิท - ถนนพระราม 4)","district":"คลองเตย","km":1.4,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-05","survey_start":"2026-06-05","survey_end":"2026-06-05","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":95,"name":"ซอยอินทามระ41(ปากซอยอินทามระ41 - ปากซอยจิ๊บดำริห์)","district":"สามเสน","km":1.9,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":96,"name":"ซอยเปรมสมบัติ (ซอยเปรมสมบัติแยก2 - ประชาสงเคราะห์30)","district":"สามเสน","km":0.56,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.56,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":97,"name":"ซอยประชาสงเคราะห์21 (มิตรไมตรีซอย1 - ถนนประชาสงเคราะห์)","district":"สามเสน","km":0.42,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.42,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":98,"name":"ซอยวิภาวดีรังสิต2(ถนนวิภาวดีรังสิต - ซอยเพิ่มสิน)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":99,"name":"ซอยรัชดาภิเษก 17 (ถนนรัชดาภิเษก - ซอยอินทมาระ 22)","district":"สามเสน","km":2.2,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":100,"name":"ซอยไสวสุวรรณ(ถนนประชาราษฎร์สาย 1 - ถนนกรุงเทพ - นนทบุรี)","district":"สามเสน","km":2.2,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":101,"name":"ถนนพระรามที่ 6 ซอย 30(ถนนพระราม 6 - ซอยอารีย์ 1)","district":"สามเสน","km":2.2,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":102,"name":"ซอยพหลโยธิน 7 (ถนนพหลโยธิน - กรมสรรพากร)","district":"สามเสน","km":1.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":103,"name":"ซอยอารีย์ 1(ซอยพหลโยธิน 7 - ซอยราชครู)","district":"สามเสน","km":0.9,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":104,"name":"ซอยพหลโยธิน 5 (ถนนพหลโยธิน - ซอยอารีย์ 1)","district":"สามเสน","km":0.36,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.36,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":105,"name":"ซอยอารีย์ 5(ถนนพระรามที่ 6 ซอย 30 - ซอยพหลโยธิน 7)","district":"สามเสน","km":1.3,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":106,"name":"ซอยอารีย์ 4 ฝั่งเหนือ(ซอยพหลโยธิน 7 - ซอยพหลโยธิน 9)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":107,"name":"ซอยพหลโยธิน 2 (ซอยพหลโยธิน 2 - อาคารมินริริน)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":108,"name":"ซอยพหลโยธิน (ซอยพหลโยธิน 2 - ซอยสายลม)","district":"สามเสน","km":0.28,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.28,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":109,"name":"ซอยพหลโยธิน 14 (ถนนพหลโยธิน - สุดซอยพหลโยธิน 14)","district":"สามเสน","km":1.6,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":110,"name":"ซอยอินทามระ 15(ถนนสุทธิสารวินิจฉัย - ซอยวิภาวดี 3)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":111,"name":"ซอยอารีย์ 2(ถนนพระรามที่ 6 ซอย 30 - ซอยพหลโยธิน 7)","district":"สามเสน","km":1.3,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":112,"name":"ซอยพหลโยธิน 1 (ซอยพหลโยธิน 1 - ทางด่วน)","district":"สามเสน","km":0.7,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":113,"name":"ถนนยมราชสุขุม(ถนนพลับพลาไชย-ถนนวรจักร) 2 ฝั่ง","district":"วัดเลียบ","km":0.7,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":114,"name":"ซอยยศเส(ถนนกรุงเกษม-ถนนพลับพลาไชย) 2 ฝั่ง","district":"วัดเลียบ","km":0.56,"controller":"อนันตเดช","phase":2,"survey_plan":"2026-06-04","survey_start":"2026-06-04","survey_end":"2026-06-04","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.56,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":115,"name":"ซอยอินทามระ 33(ซอยวิภาวดี 10-สุดซอยอินทามระ 33)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":116,"name":"ซอยอินทามระ 35(ถนนสุทธิสารวินิจฉัย-สุดซอยอินทามระ 35)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":117,"name":"ซอยอินทามระ 39 แยก 1(ถนนสุทธิสารวินิจฉัย-สุดซอยอินทามระ 39)","district":"สามเสน","km":1.1,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":118,"name":"ถนนเทอดไทด(ถนนเพชรเกษม-ถนนราชพฤกษ์)","district":"บางขุนเทียน","km":7.0,"controller":"จตุรงค์ (ม)","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":119,"name":"ซอยเมธีนิเวศม์ (ตลอดทั้งซอย)","district":"คลองเตย","km":0.5,"controller":"รัชพนธ์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":120,"name":"ซอยสุขุมวิท 34 (ถนนสุขุมวิท - ซอยท่านหญิงพวงรัตน์ประไพ) 1 ฝั่ง","district":"คลองเตย","km":1.7,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-09","survey_start":"2026-06-09","survey_end":"2026-06-09","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":121,"name":"ซอยสาทร 2 (ถนนสาทรเหนือ - ซอยศาลาแดง 1) 1 ฝั่ง","district":"คลองเตย","km":0.34,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-05-26","survey_start":"2026-05-26","survey_end":"2026-05-26","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.34,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":122,"name":"ซอยอินทมาระ 15(ถนนสุทธิสารวินิจฉัย - ซอยพหลโยธิน 18)","district":"สามเสน","km":2.4,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":123,"name":"ซอย 20 มิถุนา(ถนนสุทธิสารวินิจฉัย - ซอยประชาราษฎร์บำเพ็ญ 13)","district":"สามเสน","km":3.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":124,"name":"ซอยจิ๊ปดำริห์ (ถนนสุทธิสารวินิจฉัย-ซอยอินทมาระ 41)","district":"สามเสน","km":2.0,"controller":"เมธวัจน์","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":125,"name":"ถนนตรีเพชร (ถนนเจริญกรุง-ถนนจักรเพชร)","district":"วัดเลียบ","km":1.2,"controller":"อนันตเดช","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":126,"name":"ถนนตีทอง(ถนนเจริญกรุง-ถนนบำรุงเมือง)","district":"วัดเลียบ","km":1.0,"controller":"อนันตเดช","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":127,"name":"ถนนบูรพา(ถนนเจริญกรุง-ถนนพาหุรัต)","district":"วัดเลียบ","km":0.48,"controller":"อนันตเดช","phase":2,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.48,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":128,"name":"ซอยพระพินิจ (ถนนนราธิวาสราชนครินทร์-ซอยสาธร 3)","district":"ยานนาวา","km":1.3,"controller":"รัชพนธ์","phase":2,"survey_plan":"2026-06-05","survey_start":"2026-06-05","survey_end":"2026-06-05","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":129,"name":"ถนนประชาอุทิศ (ถนนประเสริฐมนูญกิจ - ถนนรามคำแหง) 2 ฝั่ง","district":"นวลจันทร์","km":3.6,"controller":"ธนรัตน์","phase":2,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":130,"name":"ซอยลาดพร้าว 80 (ถนนลาดพร้าว - ซอยจันทิมา) 1 ฝั่ง","district":"นวลจันทร์","km":1.5,"controller":"ธนรัตน์","phase":2,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":131,"name":"ถนนสรรพาวุธ ฝั่งคู่(แยกบางนา-วัดบางนานอก)","district":"บางนา","km":2.5,"controller":"จตุรงค์ (จ)","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":132,"name":"ถนนสรรพาวุธ ฝั่งคี่(แยกบางนา-วัดบางนานอก)","district":"บางนา","km":2.5,"controller":"จตุรงค์ (จ)","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":133,"name":"ซอยมหาดไทย ลาดพร้าว 122 (ถนนลาดพร้าว - สะพานมิตรมหาไทย) 2 ฝั่ง","district":"นวลจันทร์","km":3.6,"controller":"ธนรัตน์","phase":3,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":134,"name":"ถนนอินทราภรณ์ (ถนนประเสริฐมนูญกิจ - ซอยรามคำแหง 43/1) 2 ฝั่ง","district":"นวลจันทร์","km":2.2,"controller":"ธนรัตน์","phase":3,"survey_plan":"2026-06-22","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":135,"name":"ถนนสังคมสงเคราะห์ ( สี่แยกถนนโชคชัย 4 แยก 9 - ถนนประดิษฐ์มนูธรรม ) 1 ฝั่ง","district":"นวลจันทร์","km":3.9,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":136,"name":"ถนนสุขาภิบาล 5 ฝั่งคู่ (ถนนรามอินทรา 39 - ถนนเทพรักษ์) 1 ฝั่ง","district":"บางเขน","km":6.18,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-15","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.18,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":137,"name":"ถนนสุขาภิบาล 5 ฝั่งคี่ (ถนนรามอินทรา 39 - ถนนเทพรักษ์) 1 ฝั่ง","district":"บางเขน","km":6.18,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-15","survey_start":"2026-06-15","survey_end":"2026-06-15","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.18,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":138,"name":"ถนนสุขาภิบาล 5 ฝั่งคู่ (ถนนเทพรักษ์ - ถนนสายไหม) ฝั่งคู่ 1 ฝั่ง","district":"บางเขน","km":6.18,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-17","survey_start":"2026-06-17","survey_end":"2026-06-17","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.18,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":139,"name":"ถนนสุขาภิบาล 5 ฝั่งคี่ (ถนนเทพรักษ์ - ถนนสายไหม) ฝั่งคี่ 1 ฝั่ง","district":"บางเขน","km":6.18,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-17","survey_start":"2026-06-17","survey_end":"2026-06-17","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.18,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":140,"name":"ถนนสุขุมวิทสายเก่า (ฝั่งขาเข้า กม.39 - กม.47) 1 ฝั่ง","district":"สมุทรปราการ","km":8.0,"controller":"กฤษฎา","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":141,"name":"ซอยราชปรารภ 8(ถนนราชปรารภ - ถนนเพรชบุรี)","district":"บางกะปิ","km":0.9,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-09","survey_start":"2026-06-09","survey_end":"2026-06-09","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":142,"name":"ซอยปรีดีพนมยงค์ 14 (ปากซอยปรีดีพนมยงค์ 14-สุดซอยปรีดีพนมยงค์ 14 ตัดพัฒนเวศม์ ซอย 12)","district":"บางกะปิ","km":1.8,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-09","survey_start":"2026-06-09","survey_end":"2026-06-09","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":143,"name":"ซอยสุขุมวิท 23(ปากซอยสุขุมวิท 23-สุดซอยสุขุมวิท 23 (ประตูมศว. ประสานมิตร))","district":"บางกะปิ","km":2.0,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-12","survey_start":"2026-06-12","survey_end":"2026-06-12","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":144,"name":"ซอยปรีดีพนมยงค์ 26 ซอยพัฒนเวศม์ (ปากซอยปรีดีพนมยงค์ 26-สุดซอยปรีดีพนมยงค์ 26)","district":"บางกะปิ","km":1.6,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-09","survey_start":"2026-06-09","survey_end":"2026-06-09","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":145,"name":"ซอยศาลาแดง 1 (ถนนพระราช 4-ถนนศาลาแดง) 1 ฝั่ง","district":"คลองเตย","km":1.0,"controller":"รัชพนธ์","phase":3,"survey_plan":"2026-06-01","survey_start":"2026-06-01","survey_end":"2026-06-01","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":146,"name":"ซอยสาทร 8 (ถนนสาทรเหนือ-ถนนสาทรเหนือ) 1 ฝั่ง","district":"คลองเตย","km":1.0,"controller":"รัชพนธ์","phase":3,"survey_plan":"2026-06-10","survey_start":"2026-06-10","survey_end":"2026-06-10","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":147,"name":"ซอยสามเสน 28(ถนนสามเสน -ซอยวัดประชาระบือธรรม)","district":"สามเสน","km":1.7,"controller":"เมธวัจน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":148,"name":"ซอยถนนนราธิวาสราชนครินทร์ 8 (ถนนนราธิวาสราชนครินทร์-ซอยสาธร 11)","district":"ยานนาวา","km":1.3,"controller":"รัชพนธ์","phase":3,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":149,"name":"ซอยถนนนราธิวาสราชนครินทร์10 (ถนนนราธิวาสราชนครินทร์-ซอยสาธร 11)","district":"ยานนาวา","km":1.5,"controller":"รัชพนธ์","phase":3,"survey_plan":"2026-06-16","survey_start":"2026-06-16","survey_end":"2026-06-16","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":150,"name":"ถนนเชื่อมสัมนพันธ์ ฝั่งคี่ (ถนนสกุลดี - ถนนสุวินทวงศ์)","district":"มีนบุรี","km":6.7,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":151,"name":"ถนนเชื่อมสัมนพันธ์ ฝั่งคู่ (ถนนสกุลดี - ถนนสุวินทวงศ์)","district":"มีนบุรี","km":6.7,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":6.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":152,"name":"ถนนวังเดิม (แยกวังเดิม - ตัดถนนอรุณอมรินทร์) 2 ฝั่ง","district":"ธนบุรี","km":1.0,"controller":"วราวุธ","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":153,"name":"ถนนวังเดิม (แยกวังเดิม - ถนนอิสรภาพ) 2 ฝั่ง","district":"ธนบุรี","km":0.9,"controller":"วราวุธ","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":154,"name":"ซอยสวนมะลิ 3(ถนนบำรุงเมือง-ถนนหลวง)","district":"วัดเลียบ","km":0.9,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-01","survey_start":"2026-06-01","survey_end":"2026-06-01","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.9,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":155,"name":"ซอยเฉลิมเขต 2 (ถนนพลับพลาไชย-ซอยเฉลิมเขต 1)","district":"วัดเลียบ","km":0.8,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":156,"name":"ซอยลำพู(ถนนสามเสน -สุดซอย )","district":"วัดเลียบ","km":0.6,"controller":"อนันตเดช","phase":3,"survey_plan":"2026-06-04","survey_start":"2026-06-04","survey_end":"2026-06-04","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":157,"name":"ซอยอิสรภาพ 19(ถนนอิสรภาพ-ซอยอิสรภาพ 15)","district":"วัดเลียบ","km":0.8,"controller":"อนันตเดช","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":158,"name":"ถนนสุคนธสวัสดิ์ (แยกโรงไม้ - ถนนประเสริฐมนูญกิจ) 2 ฝั่ง","district":"นวลจันทร์","km":4.0,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":159,"name":"ถนนอยู่เย็น (ถนนประดิษฐ์มนูญธรรม - ถนนรามอินทรา) 2 ฝั่ง","district":"นวลจันทร์","km":3.0,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":160,"name":"ถนนสังคมสงเคราะห์ (ถนนโชคชัย 4 - ถนนประดิษฐ์มนูญธรรม) 2 ฝั่ง","district":"นวลจันทร์","km":4.0,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":161,"name":"ซอยโยธินพัฒนา (ถนนประดิษฐ์มนูญธรรม - ถนนประเสริฐมนูญกิจ) 2 ฝั่ง","district":"นวลจันทร์","km":3.6,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":3.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":162,"name":"ซอยประเสริฐมนูกิจ 29 (ถนนประเสริฐมนูญกิจ - ถนนรามอินทรา) 2 ฝั่ง","district":"นวลจันทร์","km":7.2,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":7.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":163,"name":"ถนนมหาดไทย(ซอยลาดพร้าว 122 และซอยรามคำแหง) (ถนนลาดพร้าว-ถนนรามคำแหง)","district":"นวลจันทร์","km":2.0,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":164,"name":"ซอยรัชดาภิเษก 36 (ถนนรัชดาภิเษก - ซอยรัชดาภิเษก 36 แยก 19)","district":"บางเขน","km":1.1,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-19","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":165,"name":"ซอยรัชดาภิเษก 32 ((ถนนรัชดาภิเษก - ซอยรัชดาภิเษก 36 แยก 19 - คลองลาดพร้าว)","district":"บางเขน","km":1.53,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-19","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.53,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":166,"name":"ซอยรัชดาภิเษก 36 แยก9 (ซอยรัชดาภิเษก 36 - สุดซอย )","district":"บางเขน","km":0.09,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-19","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.09,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":167,"name":"ถนนทางรถไฟสายเก่าปากน้ำ ช่วง2 (คลองสำโรง - ช้าง 3 เศียร) 2 ฝั่ง","district":"สมุทรปราการ","km":5.0,"controller":"กฤษฎา","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":168,"name":"ซอยรัชดาภิเษก 36 แยก9-3 (ซอยรัชดาภิเษก 36 แยก9 - ซอยซูซูกิ )","district":"บางเขน","km":0.8,"controller":"จิรวัฒน์","phase":3,"survey_plan":"2026-06-19","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":0.8,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":169,"name":"ซอยบางกระดี่ 32 เชื่อมออกซอยแสมดำ 17 เสาไฟฟ้าฝั่งเดียว","district":"ราษฎร์บูรณะ","km":2.6,"controller":"จตุรงค์ (ม)","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":2.6,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":170,"name":"ถนนบางกระดี่ (ถนนพระราม 2 - คลองสนามชัย) (เสาไฟฟ้าสองฝั่ง)","district":"ราษฎร์บูรณะ","km":7.2,"controller":"จตุรงค์ (ม)","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":7.2,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":171,"name":"ถนนคุ้มเกล้า (ถนนสุวินทวงศ์ - ถนนเจ้าคุณทหาร) 2 ฝั่ง","district":"ลาดกระบัง","km":14.0,"controller":"เมธวัจน์","phase":3,"survey_plan":"2026-06-03","survey_start":"2026-06-03","survey_end":"2026-06-03","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":14,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":172,"name":"ถนนลาดพร้าววังหิน (ถนนโชคชัย 4 - คลองเสือน้อย) 2 ฝั่ง","district":"นวลจันทร์","km":4.5,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":4.5,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":173,"name":"ซอยสุขุมวิท 62 (ถนนสุขุมวิท - โรงพยาบาลรวมใจรักษ์)","district":"บางนา","km":1.1,"controller":"จตุรงค์ (จ)","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":1.1,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""},{"id":174,"name":"ถนนเสรีไทย (ถนนรามอินทรา - ถนนศรีนครินทร์) 2 ฝั่ง","district":"มีนบุรี","km":18.7,"controller":"ธนรัตน์","phase":3,"survey_plan":"","survey_start":"","survey_end":"","submit":"","rev0":"","rev1":"","rev2":"","rev3":"","adss_plan":18.7,"adss_actual":null,"adss_start":"","adss_end":"","inspect_start":"","inspect_end":"","cut_plan":null,"cut_actual":null,"cut_start":"","cut_end":"","rm_start":"","rm_end":"","meacheck_start":"","meacheck_end":"","cat":"","note":""}];
+
+function stepDone(r,k){
+  switch(k){
+    case "submit":  return !!r.submit;
+    case "approve": return !!(r.rev0||r.rev1||r.rev2||r.rev3);
+    case "adss":    return !!r.adss_end || (r.adss_actual!=null && r.adss_actual!=="" && r.adss_actual>0);
+    case "inspect": return !!r.inspect_end;
+    case "cutover": return !!r.cut_end || (r.cut_actual!=null && r.cut_actual!=="" && r.cut_plan && r.cut_actual>=r.cut_plan);
+    case "removal": return !!r.rm_end;
+    case "cat":     return !!r.cat;
+  }
+  return false;
+}
+function pctOf(r){ let s=0; for(const k in WEIGHTS) if(stepDone(r,k)) s+=WEIGHTS[k]; return s; }
+function surveyState(r){ if(r.survey_end) return "done"; if(r.survey_plan||r.survey_start) return "planned"; return "none"; }
+function statusOf(r){
+  const p=pctOf(r);
+  if(p>=100) return "เสร็จสมบูรณ์";
+  if(p>0) return "กำลังติดตั้ง";
+  if(surveyState(r)!=="none") return "กำลังสำรวจ";
+  return "ยังไม่เริ่ม";
+}
+function isLate(r){ return TODAY>PHASE_META[r.phase].deadlineDate && statusOf(r)!=="เสร็จสมบูรณ์"; }
+function buddhist(iso){ if(!iso) return ""; const [y,m,d]=iso.split('-'); return `${+d} ${["ม.ค.","ก.พ.","มี.ค.","เม.ย.","พ.ค.","มิ.ย.","ก.ค.","ส.ค.","ก.ย.","ต.ค.","พ.ย.","ธ.ค."][+m-1]} ${(+y)>2500?(+y):(+y+543)}`; }
+function recompute(){ ROUTES.forEach(r=>{ r._pct=pctOf(r); r._status=statusOf(r); r._late=isLate(r); r._survey=surveyState(r); }); }
+
+function renderBatch(){
+  const statusDot=r=>r._late?'var(--red)':({"ยังไม่เริ่ม":"#cbd5e1","กำลังสำรวจ":"#38bdf8","กำลังติดตั้ง":"#2563eb","เสร็จสมบูรณ์":"#16a34a"})[r._status];
+  document.getElementById('batch').innerHTML=[1,2,3].map(p=>{
+    const rs=ROUTES.filter(r=>r.phase===p).slice().sort((a,b)=>a.id-b.id);
+    const km=rs.reduce((a,r)=>a+r.km,0);
+    const list=rs.map(r=>`<div class="ri" title="${r.name||''}">
+      <span class="nm"><span class="dot" style="background:${statusDot(r)}"></span><span class="no">${r.id}</span>${r.name||''}</span>
+      <span class="km">${fmt(r.km)} กม.</span></div>`).join('');
+    return `<div class="bcard b${p}">
+      <h3>งวดงานที่ ${p}</h3>
+      <div class="sum"><span>เส้นทาง</span><b>${rs.length}</b></div>
+      <div class="sum tot"><span>ระยะทาง</span><b>${fmt(km)} กม.</b></div>
+      <div class="rl">${list}</div>
+    </div>`;
+  }).join('');
+}
+function render(){ recompute(); renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderGantt(); buildFilters(); renderSite(); }
+
+function renderKPI(){
+  const total=ROUTES.length, totalKm=ROUTES.reduce((a,r)=>a+r.km,0);
+  const overall=ROUTES.reduce((a,r)=>a+r._pct,0)/total;
+  const done=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").length;
+  const working=ROUTES.filter(r=>r._status==="กำลังติดตั้ง"||r._status==="กำลังสำรวจ").length;
+  const late=ROUTES.filter(r=>r._late).length;
+  const daysLeft=Math.ceil((CONTRACT_END-TODAY)/(1000*3600*24));
+  const surveyDone=ROUTES.filter(r=>r._survey==="done").length;
+  const k=[
+    {l:"เส้นทางทั้งหมด",v:total,s:fmt(totalKm)+" กม.",c:"accent"},
+    {l:"% รวมทั้งโครงการ",v:overall.toFixed(1)+"%",s:"เฉลี่ยถ่วงน้ำหนัก",c:"blue"},
+    {l:"Survey เสร็จ",v:surveyDone+"/"+total,s:(surveyDone/total*100).toFixed(0)+"% (งานเตรียม)",c:""},
+    {l:"เสร็จสมบูรณ์",v:done,s:"เส้นทางปิดครบ",c:"green"},
+    {l:"กำลังดำเนินการ",v:working,s:"สำรวจ+ติดตั้ง",c:"blue"},
+    {l:"ล่าช้า (ธงแดง)",v:late,s:"เกินวันส่งมอบงวด",c:"red"},
+    {l:"วันคงเหลือ",v:daysLeft,s:"ถึง 22 เม.ย. 2570",c:"accent"}
+  ];
+  document.getElementById('kpis').innerHTML=k.map(x=>`<div class="kpi ${x.c}"><div class="label">${x.l}</div><div class="val">${x.v}</div><div class="sub">${x.s}</div></div>`).join('');
+}
+
+function renderPhases(){
+  let cum=0;
+  document.getElementById('phases').innerHTML=[1,2,3].map(p=>{
+    const rs=ROUTES.filter(r=>r.phase===p), m=PHASE_META[p];
+    const avg=rs.reduce((a,r)=>a+r._pct,0)/rs.length;
+    const km=rs.reduce((a,r)=>a+r.km,0); cum+=km;
+    const done=rs.filter(r=>r._status==="เสร็จสมบูรณ์").length, late=rs.filter(r=>r._late).length;
+    const cumPct=Math.min(100,cum/m.cumTarget*100), under=cum<m.cumTarget;
+    return `<div class="pcard p${p}">
+      <div class="ph"><span class="name">${m.name}</span><span class="share">${m.share}%</span></div>
+      <div class="deadline">📅 ส่งมอบ ${m.deadline}${late?` · <span style="color:var(--red);font-weight:700">⚠ ล่าช้า ${late}</span>`:''}</div>
+      <div class="pct">${avg.toFixed(1)}%</div>
+      <div class="pbar"><span style="width:${avg}%"></span></div>
+      <div class="grid2">
+        <div class="box"><div class="t">เส้นทางเสร็จ/ทั้งหมด</div><div class="v">${done} / ${rs.length}</div></div>
+        <div class="box"><div class="t">ระยะทางสะสม / เป้า</div><div class="v">${fmt(cum)} / ${m.cumTarget} กม.</div>
+          <div class="kmbar ${under?'under':''}"><span style="width:${cumPct}%"></span></div></div>
+      </div></div>`;
+  }).join('');
+}
+
+function renderMSProgress(){
+  const total=ROUTES.length, rows=[];
+  rows.push({ms:"MS1",lbl:"งานสำรวจ (Survey)",wt:"0%",done:ROUTES.filter(r=>r._survey==="done").length});
+  MS_ORDER.forEach(k=>rows.push({ms:MS_GROUP[k],lbl:MS_LABELS[k],wt:WEIGHTS[k]+"%",done:ROUTES.filter(r=>stepDone(r,k)).length}));
+  document.getElementById('msProgress').innerHTML=rows.map(x=>{
+    const pct=x.done/total*100;
+    return `<div class="row"><div class="lbl"><b>${x.ms}</b>${x.lbl}<span class="wt">${x.wt}</span></div>
+      <div class="track"><span class="${pct===0?'zero':''}" style="width:${pct}%"></span></div>
+      <div class="num">${x.done}/${total} <small>(${pct.toFixed(0)}%)</small></div></div>`;
+  }).join('');
+}
+
+function cellColor(pct){ if(pct>=100)return'background:#dcfce7;color:#15803d'; if(pct>0)return'background:#dbeafe;color:#1d4ed8'; return'background:#f1f5f9;color:#94a3b8'; }
+function renderMatrix(){
+  let head='<tr><th class="l">งวดงาน</th><th style="background:#e0f2fe">Survey<br><small>(0%)</small></th>';
+  MS_ORDER.forEach(k=>head+=`<th>${MS_LABELS[k]}<br><small>${WEIGHTS[k]}%</small></th>`);
+  head+='<th>% เฉลี่ยทั้งงวด</th></tr>';
+  let body='';
+  [1,2,3].forEach(p=>{
+    const rs=ROUTES.filter(r=>r.phase===p), n=rs.length;
+    const sp=rs.filter(r=>r._survey==="done").length/n*100;
+    body+=`<tr class="mxrow" onclick="filterByPhase(${p})" title="คลิกเพื่อดูเฉพาะ${PHASE_META[p].name}ในตารางรายเส้นทาง"><td class="l"><b>${PHASE_META[p].name}</b> <span class="mxgo">▾ ดูเส้นทาง</span><br><small style="color:#94a3b8">${n} เส้นทาง</small></td>`;
+    body+=`<td><span class="mcell" style="${cellColor(sp)}">${sp.toFixed(0)}%</span></td>`;
+    MS_ORDER.forEach(k=>{ const pct=rs.filter(r=>stepDone(r,k)).length/n*100; body+=`<td><span class="mcell" style="${cellColor(pct)}">${pct.toFixed(0)}%</span></td>`; });
+    body+=`<td><b>${(rs.reduce((a,r)=>a+r._pct,0)/n).toFixed(1)}%</b></td></tr>`;
+  });
+  document.getElementById('matrix').innerHTML=head+body;
+}
+
+function filterByPhase(p){
+  const sel=document.getElementById('fPhase');
+  sel.value=String(p);
+  // reset other filters so the phase view is clean
+  document.getElementById('fStatus').value='';
+  document.getElementById('fDistrict').value='';
+  document.getElementById('fController').value='';
+  renderSite();
+  const sec=document.getElementById('site').closest('.section');
+  sec.scrollIntoView({behavior:'smooth',block:'start'});
+  sec.classList.remove('flash'); void sec.offsetWidth; sec.classList.add('flash');
+}
+
+function renderGantt(){
+  const start=new Date(2026,4,1), end=new Date(2027,3,30), span=end-start;
+  const months=[]; let d=new Date(start);
+  while(d<=end){ months.push(new Date(d)); d.setMonth(d.getMonth()+1); }
+  const colW=100/months.length;
+  let head='<tr><th class="l" style="min-width:140px">งวดงาน</th>';
+  months.forEach(m=>head+=`<th style="width:${colW}%;font-size:11px">${m.toLocaleDateString('th-TH',{month:'short'})}<br>${(m.getFullYear()+543).toString().slice(2)}</th>`);
+  head+='</tr>';
+  const projStart=new Date(2026,4,1);
+  const bars=[
+    {name:"งวดที่ 1",s:projStart,e:PHASE_META[1].deadlineDate,c:"#2563eb",dl:PHASE_META[1].deadline},
+    {name:"งวดที่ 2",s:PHASE_META[1].deadlineDate,e:PHASE_META[2].deadlineDate,c:"#f5a623",dl:PHASE_META[2].deadline},
+    {name:"งวดที่ 3",s:PHASE_META[2].deadlineDate,e:PHASE_META[3].deadlineDate,c:"#16a34a",dl:PHASE_META[3].deadline}
+  ];
+  const pos=dt=>Math.max(0,Math.min(100,(dt-start)/span*100));
+  let body='';
+  bars.forEach(b=>{
+    const L=pos(b.s),W=pos(b.e)-pos(b.s);
+    body+=`<tr><td class="l" style="font-size:12px;font-weight:700">${b.name}<br><small style="color:#94a3b8;font-weight:400">ส่งมอบ ${b.dl}</small></td><td class="barcell" colspan="${months.length}" style="position:relative">
+      <div class="gbar" style="left:${L}%;width:${W}%;background:${b.c}"></div>
+      <div class="today" style="left:${pos(TODAY)}%"></div>
+      <div class="milestone-dot" title="ส่งมอบ${b.name}" style="left:calc(${pos(b.e)}% - 5px)"></div>
+      <div class="gdate ${pos(b.e)>78?'left':'right'}" style="left:${pos(b.e)}%">📌 ส่งมอบ ${b.dl}</div></td></tr>`;
+  });
+  document.getElementById('gantt').innerHTML='<table>'+head+body+'</table>'+
+    `<div style="padding:8px 12px;font-size:11.5px;color:#64748b">🔴 เส้นวันนี้ (${TODAY.toLocaleDateString('th-TH',{day:'numeric',month:'short'})} ${TODAY.getFullYear()+543}) · 🟡 หมุดวันส่งมอบ 3 งวด</div>`;
+}
+
+function buildFilters(){
+  const ds=[...new Set(ROUTES.map(r=>r.district))].sort();
+  const cs=[...new Set(ROUTES.map(r=>r.controller))].sort();
+  const fd=document.getElementById('fDistrict'), fc=document.getElementById('fController');
+  if(fd.options.length<=1) ds.forEach(x=>fd.add(new Option(x,x)));
+  if(fc.options.length<=1) cs.forEach(x=>fc.add(new Option(x,x)));
+}
+function statusPill(r){
+  if(r._late) return '<span class="statuspill s-late">⚠ ล่าช้า</span>';
+  const map={"ยังไม่เริ่ม":"s-none","กำลังสำรวจ":"s-survey","กำลังติดตั้ง":"s-install","เสร็จสมบูรณ์":"s-done"};
+  return `<span class="statuspill ${map[r._status]}">${r._status}</span>`;
+}
+function di(r,field){ return `<input type="date" value="${r[field]||""}" onchange="editField(${r.id},'${field}',this.value)">`; }
+function ni(r,field){ const v=(r[field]==null?"":r[field]); return `<input class="num" type="number" min="0" step="1" value="${v}" onchange="editField(${r.id},'${field}',this.value)">`; }
+
+function filteredRoutes(){
+  const fp=fPhase.value,fdv=fDistrict.value,fcv=fController.value,fs=fStatus.value,q=fSearch.value.trim().toLowerCase();
+  return ROUTES.filter(r=>{
+    if(fp&&r.phase!=+fp)return false;
+    if(fdv&&r.district!==fdv)return false;
+    if(fcv&&r.controller!==fcv)return false;
+    if(fs==="late"&&!r._late)return false;
+    if(fs&&fs!=="late"&&r._status!==fs)return false;
+    if(q&&!((r.name||"").toLowerCase().includes(q)||(r.district||"").toLowerCase().includes(q)||(r.controller||"").toLowerCase().includes(q)))return false;
+    return true;
+  });
+}
+
+function renderSite(){
+  const rows=filteredRoutes(); const n=rows.length||1;
+  document.getElementById('rowcount').textContent=rows.length+" / "+ROUTES.length+" เส้นทาง";
+  const hp=k=>(rows.filter(r=>stepDone(r,k)).length/n*100).toFixed(0);
+  const sp=(rows.filter(r=>r._survey==="done").length/n*100).toFixed(0);
+
+  let h=`<thead>
+   <tr>
+    <th rowspan="3" class="sticky0">No</th>
+    <th rowspan="3" class="sticky1 l">ชื่อเส้นทาง</th>
+    <th rowspan="3">เขต</th>
+    <th rowspan="3">ระยะทาง</th>
+    <th rowspan="3">ผู้ควบคุม</th>
+    <th rowspan="3">งวด</th>
+    <th colspan="3" class="grp-survey">งานสำรวจ<span class="wt">น้ำหนัก 0% (งานเตรียม)</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${sp}%</span></th>
+    <th colspan="5" class="grp-design">Design<span class="wt">น้ำหนักรวม 10%</span></th>
+    <th colspan="4" class="grp-install">ADSS OFC<span class="wt">น้ำหนัก 50%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('adss')}%</span></th>
+    <th colspan="2" class="grp-install">ตรวจสอบสาย ADSS<span class="wt">น้ำหนัก 10%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('inspect')}%</span></th>
+    <th colspan="4" class="grp-install">Cut Over<span class="wt">น้ำหนัก 20%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('cutover')}%</span></th>
+    <th colspan="2" class="grp-install">รื้อถอนเคเบิลเก่า<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('removal')}%</span></th>
+    <th colspan="2" class="grp-install">MEA ตรวจสอบงานติดตั้ง</th>
+    <th rowspan="3" class="grp-cat">CAT Document<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('cat')}%</span></th>
+    <th rowspan="3">% เส้นนี้</th>
+    <th rowspan="3">สถานะ</th>
+   </tr>
+   <tr>
+    <th rowspan="2" class="grp-survey">แผนสำรวจ</th><th rowspan="2" class="grp-survey">วันเริ่ม</th><th rowspan="2" class="grp-survey">วันเสร็จ</th>
+    <th rowspan="2" class="grp-design">Submit to MEA<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('submit')}%</span></th>
+    <th colspan="4" class="grp-design">MEA Approve<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('approve')}%</span></th>
+    <th rowspan="2" class="grp-install">Plan</th><th rowspan="2" class="grp-install">Actual</th><th rowspan="2" class="grp-install">วันเริ่ม</th><th rowspan="2" class="grp-install">วันเสร็จ</th>
+    <th rowspan="2" class="grp-install">วันเริ่ม</th><th rowspan="2" class="grp-install">วันเสร็จ</th>
+    <th rowspan="2" class="grp-install">จุด Plan</th><th rowspan="2" class="grp-install">จุด Actual</th><th rowspan="2" class="grp-install">วันเริ่ม</th><th rowspan="2" class="grp-install">วันเสร็จ</th>
+    <th rowspan="2" class="grp-install">วันเริ่ม</th><th rowspan="2" class="grp-install">วันเสร็จ</th>
+    <th rowspan="2" class="grp-install">วันเริ่ม</th><th rowspan="2" class="grp-install">วันเสร็จ</th>
+   </tr>
+   <tr>
+    <th class="grp-design">Rev.0</th><th class="grp-design">Rev.1</th><th class="grp-design">Rev.2</th><th class="grp-design">Rev.3</th>
+   </tr>
+  </thead>`;
+
+  let body='<tbody>';
+  rows.forEach(r=>{
+    body+=`<tr>
+     <td class="sticky0">${r.id}</td>
+     <td class="sticky1 l"><b>${r.name||''}</b>${r._late?' <span style="color:var(--red)">⚠</span>':''}</td>
+     <td>${r.district||''}</td>
+     <td style="text-align:right">${fmt(r.km)}</td>
+     <td>${r.controller||''}</td>
+     <td>${r.phase}</td>
+     <td>${di(r,'survey_plan')}</td><td>${di(r,'survey_start')}</td><td>${di(r,'survey_end')}</td>
+     <td>${di(r,'submit')}</td>
+     <td>${di(r,'rev0')}</td><td>${di(r,'rev1')}</td><td>${di(r,'rev2')}</td><td>${di(r,'rev3')}</td>
+     <td>${ni(r,'adss_plan')}</td><td>${ni(r,'adss_actual')}</td><td>${di(r,'adss_start')}</td><td>${di(r,'adss_end')}</td>
+     <td>${di(r,'inspect_start')}</td><td>${di(r,'inspect_end')}</td>
+     <td>${ni(r,'cut_plan')}</td><td>${ni(r,'cut_actual')}</td><td>${di(r,'cut_start')}</td><td>${di(r,'cut_end')}</td>
+     <td>${di(r,'rm_start')}</td><td>${di(r,'rm_end')}</td>
+     <td>${di(r,'meacheck_start')}</td><td>${di(r,'meacheck_end')}</td>
+     <td>${di(r,'cat')}</td>
+     <td class="pctcell" style="color:${r._pct>=100?'var(--green)':r._pct>0?'var(--mea-blue)':'#94a3b8'}">${r._pct}%</td>
+     <td>${statusPill(r)}</td>
+    </tr>`;
+  });
+  body+='</tbody>';
+  document.getElementById('site').innerHTML=h+body;
+  // self-correct sticky header offsets based on real row heights
+  requestAnimationFrame(()=>{
+    syncTopScroll();
+    const thead=document.querySelector('#site thead');
+    if(!thead) return;
+    const tr=thead.querySelectorAll('tr');
+    if(tr.length>=3){
+      const h1=tr[0].getBoundingClientRect().height;
+      const h2=tr[1].getBoundingClientRect().height;
+      tr[1].querySelectorAll('th').forEach(t=>t.style.top=h1+'px');
+      tr[2].querySelectorAll('th').forEach(t=>t.style.top=(h1+h2)+'px');
+    }
+  });
+}
+
+function editField(id,field,val){
+  const r=ROUTES.find(x=>x.id===id); if(!r) return;
+  if(field.includes('plan')||field.includes('actual')) r[field]= val===""?null:Number(val);
+  else r[field]=val;
+  recompute();
+  renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderSite();
+}
+
+['fPhase','fDistrict','fController','fStatus','fSearch'].forEach(id=>document.getElementById(id).addEventListener('input',renderSite));
+
+let _scrollSyncing=false;
+function syncTopScroll(){
+  const top=document.getElementById('topscroll'), wrap=document.getElementById('sitewrap'), inner=document.getElementById('topscrollInner'), tbl=document.getElementById('site');
+  if(!top||!wrap||!inner||!tbl) return;
+  inner.style.width=tbl.scrollWidth+'px';
+}
+window.addEventListener('load',()=>{
+  const top=document.getElementById('topscroll'), wrap=document.getElementById('sitewrap');
+  if(top&&wrap){
+    top.addEventListener('scroll',()=>{ if(_scrollSyncing)return; _scrollSyncing=true; wrap.scrollLeft=top.scrollLeft; _scrollSyncing=false; });
+    wrap.addEventListener('scroll',()=>{ if(_scrollSyncing)return; _scrollSyncing=true; top.scrollLeft=wrap.scrollLeft; _scrollSyncing=false; });
+    window.addEventListener('resize',syncTopScroll);
+    syncTopScroll();
+  }
+});
+
+function saveLocal(){
+  try{ localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES)); alert('บันทึกแล้ว ✓ (เก็บในเบราว์เซอร์เครื่องนี้) — เปิดไฟล์ครั้งหน้าจะโหลดให้อัตโนมัติ'); }
+  catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
+}
+(function loadLocal(){
+  try{ const s=localStorage.getItem('mea_phase3_routes'); if(s){ const d=JSON.parse(s); if(Array.isArray(d)&&d.length){ ROUTES=d; document.getElementById('dataSrc').innerHTML='แหล่งข้อมูล: <b style="color:#0b3d91">ข้อมูลที่บันทึกในเครื่อง</b>'; } } }catch(e){}
+})();
+
+document.getElementById('fileUp').addEventListener('change',e=>{
+  const f=e.target.files[0]; if(!f) return;
+  const rd=new FileReader();
+  rd.onload=ev=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(ev.target.result),{type:'array',cellDates:true});
+      const sh=wb.Sheets[wb.SheetNames.find(n=>/update|progress/i.test(n))||wb.SheetNames[0]];
+      const aoa=XLSX.utils.sheet_to_json(sh,{header:1,raw:false,dateNF:'yyyy-mm-dd'});
+      const out=[];
+      const norm=v=>{ if(!v) return ""; const s=(""+v).trim(); const m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if(m){let y=+m[1]; if(y>2500)y-=543; if(y<2000) y=(+m[2]>=5?2026:2027); return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;} const m2=s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/); if(m2){let y=+m2[3]; if(y>2500)y-=543; if(y<100)y+=2000; return `${y}-${String(+m2[2]).padStart(2,'0')}-${String(+m2[1]).padStart(2,'0')}`;} return ""; };
+      const num=v=>{ if(v===""||v==null) return null; const x=Number((""+v).replace(/[^0-9.]/g,'')); return isNaN(x)?null:x; };
+      for(let i=7;i<aoa.length;i++){
+        const row=aoa[i]; if(!row||row[0]==null||row[0]==="") continue;
+        const id=parseInt(row[0]); if(isNaN(id)) continue;
+        out.push({
+          id, name:row[1]||"", district:row[2]||"", km:num(row[3])||0, controller:row[4]||"",
+          phase: parseInt(row[6])||1,
+          survey_plan:norm(row[7]), survey_start:norm(row[8]), survey_end:norm(row[9]),
+          submit:norm(row[10]), rev0:norm(row[11]), rev1:norm(row[12]), rev2:norm(row[13]), rev3:norm(row[14]),
+          adss_plan:num(row[15]), adss_actual:num(row[16]), adss_start:norm(row[17]), adss_end:norm(row[18]),
+          inspect_start:norm(row[19]), inspect_end:norm(row[20]),
+          cut_plan:num(row[21]), cut_actual:num(row[22]), cut_start:norm(row[23]), cut_end:norm(row[24]),
+          rm_start:norm(row[25]), rm_end:norm(row[26]),
+          meacheck_start:norm(row[27]), meacheck_end:norm(row[28]),
+          cat:norm(row[29]), note:row[35]||""
+        });
+      }
+      if(!out.length){ alert("ไม่พบข้อมูลเส้นทางในไฟล์ (เริ่มอ่านแถวที่ 8)"); return; }
+      ROUTES=out;
+      document.getElementById('dataSrc').innerHTML='แหล่งข้อมูล: <b style="color:#0b3d91">'+f.name+'</b>';
+      render();
+      alert("นำเข้าสำเร็จ: "+ROUTES.length+" เส้นทาง");
+    }catch(err){ alert("อ่านไฟล์ไม่สำเร็จ: "+err.message); }
+  };
+  rd.readAsArrayBuffer(f);
+});
+
+function exportExcel(){
+  const bd=iso=>{ if(!iso) return null; const [y,m,d]=iso.split('-'); return `${(+y>2500?+y:+y+543)}-${m}-${d}`; };
+  const N=ROUTES.length;
+  const A=[];
+  A.push(["การไฟฟ้านครหลวง"]);
+  A.push(["งานจ้างจัดระเบียบสายสื่อสาร ระยะทาง 400 กิโลเมตร (Phase 3)"]);
+  A.push(["สัญญาจ้างเลขที่ ID7-4638-TGA"]);
+  A.push(["สรุป % ทำเสร็จรายขั้น (คำนวณสด) →"]); // row idx 3 (Excel row 4) = TOP summary (filled below)
+  // table column headers
+  A.push(["เส้นทางที่","ชื่อเส้นทาง","การไฟฟ้าเขต","ระยะทาง","ผู้ควบคุมงาน","กำหนดตัดสายสื่อสาร","งวดงาน","งานสำรวจ","","","Design","","","","","Installation","","","","","","","","","","","","","","CAT Document","% Complete","งวดงานที่ส่งมอบ","ส่งมอบงาน (Plan)","ความคืบหน้า","ปัญหาและอุปสรรค","หมายเหตุ"]);
+  A.push(["","","","","","","","แผนสำรวจ","วันเริ่มงาน","วันเสร็จงาน","Submit to MEA","MEA Approve","","","","ADSS OFC","","","","ตรวสอบ สาย ADSS","","Cut Over","","","","รื้อถอนเคเบิลเก่า","","MEA ตรวจสอบงานติดตั้งทั้งหมด","","","","","","","",""]);
+  A.push(["","","","","","","","","","","","Rev.0","Rev.1","Rev.2","Rev.3","Plan","Actual","วันเริ่มงาน","วันเสร็จงาน","วันเริ่มงาน","วันเสร็จงาน","จำนวนจุด Plan","จำนวนจุด Actual","วันเริ่มงาน","วันเสร็จงาน","วันเริ่มงาน","วันเสร็จงาน","วันเริ่มงาน","วันเสร็จงาน","","","","","","",""]);
+  const firstDataRow=A.length+1; // Excel row of first data row (=8 now)
+  ROUTES.forEach(r=>{
+    A.push([r.id,r.name,r.district,r.km,r.controller,null,r.phase,
+      bd(r.survey_plan),bd(r.survey_start),bd(r.survey_end),
+      bd(r.submit),bd(r.rev0),bd(r.rev1),bd(r.rev2),bd(r.rev3),
+      r.adss_plan,r.adss_actual,bd(r.adss_start),bd(r.adss_end),
+      bd(r.inspect_start),bd(r.inspect_end),
+      r.cut_plan,r.cut_actual,bd(r.cut_start),bd(r.cut_end),
+      bd(r.rm_start),bd(r.rm_end),
+      bd(r.meacheck_start),bd(r.meacheck_end),
+      bd(r.cat), null, r.phase, null, null, null, r.note||null]);
+  });
+  const lastDataRow=A.length;
+  A.push([]); // spacer
+  const bottomSR=A.length+1; // Excel row of bottom summary
+  A.push(["สรุป","% ทำเสร็จรายขั้น (คำนวณสด)"]);
+
+  const wb=XLSX.utils.book_new();
+  const ws=XLSX.utils.aoa_to_sheet(A);
+
+  // ---- per-route % Complete formula (col AE) ----
+  for(let i=0;i<N;i++){
+    const R=firstDataRow+i;
+    ws['AE'+R]={t:'n', z:'0%', f:`((IF(K${R}<>"",5,0))+(IF(COUNTIF(L${R}:O${R},"?*")>0,5,0))+(IF(OR(S${R}<>"",N(Q${R})>0),50,0))+(IF(U${R}<>"",10,0))+(IF(OR(Y${R}<>"",AND(N(W${R})>=N(V${R}),N(V${R})>0)),20,0))+(IF(AA${R}<>"",5,0))+(IF(AD${R}<>"",5,0)))/100`};
+  }
+
+  // ---- summary % per step (top row 4 and bottom row) ----
+  const dr=(c)=>`${c}${firstDataRow}:${c}${lastDataRow}`;
+  function writeSummary(SR){
+    ws['H'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('J')},"?*")/${N}`};   // Survey เสร็จ (วันเสร็จ J)
+    ws['K'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('K')},"?*")/${N}`};   // Submit
+    ws['L'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('L')},"?*")/${N}`};   // Approve (Rev.0)
+    ws['P'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('S')},"?*")/${N}`};   // ADSS เสร็จ (วันเสร็จ S)
+    ws['T'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('U')},"?*")/${N}`};   // กฟน.ตรวจ (U)
+    ws['V'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('Y')},"?*")/${N}`};   // Cut Over (Y)
+    ws['Z'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('AA')},"?*")/${N}`};  // รื้อถอน (AA)
+    ws['AD'+SR]={t:'n',z:'0%',f:`COUNTIF(${dr('AD')},"?*")/${N}`}; // CAT
+    ws['AE'+SR]={t:'n',z:'0%',f:`AVERAGE(${dr('AE')})`};     // % เฉลี่ยรวม (AE already 0..1)
+  }
+  writeSummary(4);          // TOP summary (Excel row 4)
+  writeSummary(bottomSR);   // BOTTOM summary
+
+  ws['!merges']=[
+    {s:{r:4,c:7},e:{r:4,c:9}},{s:{r:4,c:10},e:{r:4,c:14}},{s:{r:4,c:15},e:{r:4,c:28}},
+    {s:{r:5,c:11},e:{r:5,c:14}},{s:{r:5,c:15},e:{r:5,c:18}},{s:{r:5,c:19},e:{r:5,c:20}},
+    {s:{r:5,c:21},e:{r:5,c:24}},{s:{r:5,c:25},e:{r:5,c:26}},{s:{r:5,c:27},e:{r:5,c:28}}
+  ];
+  ws['!cols']=[{wch:8},{wch:34},{wch:12},{wch:8},{wch:12},{wch:14},{wch:7}].concat(Array(29).fill({wch:11}));
+  XLSX.utils.book_append_sheet(wb,ws,"Update Progress");
+  XLSX.writeFile(wb,"ติดตามสถานะ_จัดระเบียบสาย_Phase3_อัปเดต.xlsx");
+}
+
+render();
+</script>
+</body>
+</html>
