@@ -111,6 +111,15 @@ td.l,th.l{text-align:left}
 .no-chip{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 4px;border-radius:6px;cursor:pointer;user-select:none}
 .no-chip:hover{background:var(--bg)}
 .no-chip input{margin:0;cursor:pointer}
+
+.save-toast{display:none;align-items:center;gap:14px;position:fixed;bottom:20px;right:20px;z-index:200;background:#0f172a;color:#fff;border-radius:12px;padding:14px 16px;box-shadow:0 10px 30px rgba(0,0,0,.25);font-size:13px;max-width:340px}
+.save-toast.show{display:flex}
+.save-toast .msg{flex:1}
+.save-toast button{border:none;border-radius:8px;padding:7px 12px;font-size:12.5px;font-weight:700;cursor:pointer;font-family:inherit}
+.save-toast .save-btn{background:var(--mea-gold);color:#1a1a1a}
+.save-toast .save-btn:hover{background:#e0941a}
+.save-toast .close-btn{background:rgba(255,255,255,.14);color:#fff}
+.save-toast .close-btn:hover{background:rgba(255,255,255,.24)}
 .statuspill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;display:inline-block}
 .s-none{background:#f1f5f9;color:#475569} .s-survey{background:#e0f2fe;color:#0369a1}
 .s-install{background:#dbeafe;color:#1d4ed8} .s-done{background:#dcfce7;color:#15803d} .s-late{background:#fee2e2;color:#b91c1c}
@@ -190,6 +199,11 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 </style>
 </head>
 <body>
+<div id="saveToast" class="save-toast">
+  <span class="msg">มีการแก้ไขข้อมูล — ต้องการบันทึกเลยหรือไม่?</span>
+  <button type="button" class="save-btn" onclick="saveLocal()">💾 บันทึกเลย</button>
+  <button type="button" class="close-btn" onclick="hideSaveToast()">ปิด</button>
+</div>
 <div class="wrap">
   <header class="top">
     <h1>📡 Dashboard ติดตามงานจัดระเบียบสายสื่อสาร <span class="badge">Phase 3</span></h1>
@@ -642,6 +656,21 @@ function editField(id,field,val){
   else r[field]=val;
   recompute();
   renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderSite();
+  showSaveToast();
+}
+
+let _saveToastTimer=null;
+function showSaveToast(){
+  const el=document.getElementById('saveToast');
+  if(!el) return;
+  el.classList.add('show');
+  clearTimeout(_saveToastTimer);
+  _saveToastTimer=setTimeout(hideSaveToast,8000);
+}
+function hideSaveToast(){
+  const el=document.getElementById('saveToast');
+  if(el) el.classList.remove('show');
+  clearTimeout(_saveToastTimer);
 }
 
 ['fNo','fPhase','fDistrict','fController','fStatus','fSearch'].forEach(id=>document.getElementById(id).addEventListener('input',renderSite));
@@ -664,7 +693,7 @@ window.addEventListener('load',()=>{
 });
 
 function saveLocal(){
-  try{ localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES)); alert('บันทึกแล้ว ✓ (เก็บในเบราว์เซอร์เครื่องนี้) — เปิดไฟล์ครั้งหน้าจะโหลดให้อัตโนมัติ'); }
+  try{ localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES)); hideSaveToast(); alert('บันทึกแล้ว ✓ (เก็บในเบราว์เซอร์เครื่องนี้) — เปิดไฟล์ครั้งหน้าจะโหลดให้อัตโนมัติ'); }
   catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
 }
 async function exportUpdatedSite(){
