@@ -235,6 +235,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
   <div class="section">
     <h2>รายเส้นทาง — Site Detail <span class="tag" id="rowcount"></span> <span class="editbadge">✎ คลิกช่องวันที่/จำนวนเพื่อกรอกได้เลย</span></h2>
     <div class="filters">
+      <input id="fNo" placeholder="เลขที่ No (เช่น 5 หรือ 10-20 หรือ 3,7,12)" style="width:230px">
       <select id="fPhase"><option value="">ทุกงวด</option><option value="1">งวด 1</option><option value="2">งวด 2</option><option value="3">งวด 3</option></select>
       <select id="fDistrict"><option value="">ทุกเขต</option></select>
       <select id="fController"><option value="">ทุกผู้ควบคุม</option></select>
@@ -437,9 +438,23 @@ function statusPill(r){
 function di(r,field){ return `<input type="date" value="${r[field]||""}" onchange="editField(${r.id},'${field}',this.value)">`; }
 function ni(r,field){ const v=(r[field]==null?"":r[field]); return `<input class="num" type="number" min="0" step="1" value="${v}" onchange="editField(${r.id},'${field}',this.value)">`; }
 
+// กรองช่อง "No" — รองรับเลขเดี่ยว (5), ลิสต์ (3,7,12), และช่วง (10-20) ผสมกันได้ เช่น "1-5,12"
+function matchesNoFilter(id,val){
+  if(!val)return true;
+  return val.split(',').map(s=>s.trim()).filter(Boolean).some(p=>{
+    if(p.includes('-')){
+      const [a,b]=p.split('-').map(s=>Number(s.trim()));
+      if(isNaN(a)||isNaN(b))return false;
+      return id>=Math.min(a,b)&&id<=Math.max(a,b);
+    }
+    const n=Number(p);
+    return !isNaN(n)&&id===n;
+  });
+}
 function filteredRoutes(){
-  const fp=fPhase.value,fdv=fDistrict.value,fcv=fController.value,fs=fStatus.value,q=fSearch.value.trim().toLowerCase();
+  const fnov=fNo.value.trim(),fp=fPhase.value,fdv=fDistrict.value,fcv=fController.value,fs=fStatus.value,q=fSearch.value.trim().toLowerCase();
   return ROUTES.filter(r=>{
+    if(fnov&&!matchesNoFilter(r.id,fnov))return false;
     if(fp&&r.phase!=+fp)return false;
     if(fdv&&r.district!==fdv)return false;
     if(fcv&&r.controller!==fcv)return false;
@@ -541,7 +556,7 @@ function editField(id,field,val){
   renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderSite();
 }
 
-['fPhase','fDistrict','fController','fStatus','fSearch'].forEach(id=>document.getElementById(id).addEventListener('input',renderSite));
+['fNo','fPhase','fDistrict','fController','fStatus','fSearch'].forEach(id=>document.getElementById(id).addEventListener('input',renderSite));
 
 let _scrollSyncing=false;
 function syncTopScroll(){
