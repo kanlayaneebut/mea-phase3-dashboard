@@ -101,6 +101,16 @@ td.l,th.l{text-align:left}
 
 .filters{display:flex;gap:10px;flex-wrap:wrap;margin-bottom:14px;align-items:center}
 .filters select,.filters input{padding:7px 10px;border:1px solid var(--border);border-radius:8px;font-size:13px;background:#fff;font-family:inherit}
+.no-filter-wrap{position:relative;display:inline-flex;gap:6px;align-items:center}
+.no-picker{display:none;position:absolute;top:calc(100% + 6px);left:0;z-index:60;background:#fff;border:1px solid var(--border);border-radius:10px;box-shadow:0 10px 28px rgba(0,0,0,.14);padding:10px;width:300px}
+.no-picker.open{display:block}
+.no-picker-head{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:var(--muted)}
+.no-picker-actions button{border:none;background:none;color:var(--mea-blue2);font-weight:700;font-size:12px;cursor:pointer;margin-left:8px;padding:0}
+.no-picker-actions button:hover{text-decoration:underline}
+.no-picker-grid{display:grid;grid-template-columns:repeat(6,1fr);gap:4px;max-height:220px;overflow-y:auto;padding-right:2px}
+.no-chip{display:flex;align-items:center;gap:4px;font-size:12px;padding:3px 4px;border-radius:6px;cursor:pointer;user-select:none}
+.no-chip:hover{background:var(--bg)}
+.no-chip input{margin:0;cursor:pointer}
 .statuspill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;display:inline-block}
 .s-none{background:#f1f5f9;color:#475569} .s-survey{background:#e0f2fe;color:#0369a1}
 .s-install{background:#dbeafe;color:#1d4ed8} .s-done{background:#dcfce7;color:#15803d} .s-late{background:#fee2e2;color:#b91c1c}
@@ -235,7 +245,21 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
   <div class="section">
     <h2>รายเส้นทาง — Site Detail <span class="tag" id="rowcount"></span> <span class="editbadge">✎ คลิกช่องวันที่/จำนวนเพื่อกรอกได้เลย</span></h2>
     <div class="filters">
-      <input id="fNo" placeholder="เลขที่ No (เช่น 5 หรือ 10-20 หรือ 3,7,12)" style="width:230px">
+      <div class="no-filter-wrap">
+        <input id="fNo" placeholder="เลขที่ No (เช่น 5 หรือ 10-20 หรือ 3,7,12)" style="width:230px">
+        <button type="button" class="btn" id="btnNoPicker" onclick="toggleNoPicker()">📋 เลือกจากรายการ</button>
+        <div id="noPicker" class="no-picker">
+          <div class="no-picker-head">
+            <span id="noPickerCount">เลือกแล้ว 0 รายการ</span>
+            <span class="no-picker-actions">
+              <button type="button" onclick="selectAllNo()">เลือกทั้งหมด</button>
+              <button type="button" onclick="clearAllNo()">ล้าง</button>
+              <button type="button" onclick="closeNoPicker()">ปิด ✕</button>
+            </span>
+          </div>
+          <div id="noPickerGrid" class="no-picker-grid"></div>
+        </div>
+      </div>
       <select id="fPhase"><option value="">ทุกงวด</option><option value="1">งวด 1</option><option value="2">งวด 2</option><option value="3">งวด 3</option></select>
       <select id="fDistrict"><option value="">ทุกเขต</option></select>
       <select id="fController"><option value="">ทุกผู้ควบคุม</option></select>
@@ -465,6 +489,70 @@ function filteredRoutes(){
   });
 }
 
+// ตัวเลือก "ติ๊กเลือกเลขที่ No จากรายการ" — ทางเลือกเสริมแทนการพิมพ์ในช่อง fNo
+// noSelected เก็บเลขที่ id ที่ติ๊กไว้ และเขียนกลับลง fNo.value เป็นลิสต์คอมมาเพื่อใช้ matchesNoFilter เดิม
+let noPickerBuilt=false;
+let noSelected=new Set();
+
+function buildNoPickerGrid(){
+  const grid=document.getElementById('noPickerGrid');
+  grid.innerHTML=ROUTES.slice().sort((a,b)=>a.id-b.id).map(r=>
+    `<label class="no-chip" title="${(r.name||'').replace(/"/g,'&quot;')}"><input type="checkbox" value="${r.id}" onchange="onNoCheck(${r.id},this.checked)">${r.id}</label>`
+  ).join('');
+  noPickerBuilt=true;
+}
+function syncNoPickerFromInput(){
+  const v=fNo.value.trim();
+  noSelected = v ? new Set(ROUTES.filter(r=>matchesNoFilter(r.id,v)).map(r=>r.id)) : new Set();
+  document.querySelectorAll('#noPickerGrid input[type=checkbox]').forEach(cb=>{
+    cb.checked=noSelected.has(Number(cb.value));
+  });
+  updateNoPickerCount();
+}
+function updateNoPickerCount(){
+  const el=document.getElementById('noPickerCount');
+  if(el)el.textContent='เลือกแล้ว '+noSelected.size+' รายการ';
+}
+function onNoCheck(id,checked){
+  if(checked)noSelected.add(id); else noSelected.delete(id);
+  fNo.value=[...noSelected].sort((a,b)=>a-b).join(',');
+  updateNoPickerCount();
+  renderSite();
+}
+function selectAllNo(){
+  noSelected=new Set(ROUTES.map(r=>r.id));
+  document.querySelectorAll('#noPickerGrid input[type=checkbox]').forEach(cb=>cb.checked=true);
+  fNo.value=''; // ติ๊กครบทุกอัน = เทียบเท่าไม่กรอง (แสดงทั้งหมด)
+  updateNoPickerCount();
+  renderSite();
+}
+function clearAllNo(){
+  noSelected=new Set();
+  document.querySelectorAll('#noPickerGrid input[type=checkbox]').forEach(cb=>cb.checked=false);
+  fNo.value='';
+  updateNoPickerCount();
+  renderSite();
+}
+function toggleNoPicker(){
+  const el=document.getElementById('noPicker');
+  el.classList.contains('open') ? closeNoPicker() : openNoPicker();
+}
+function openNoPicker(){
+  if(!noPickerBuilt)buildNoPickerGrid();
+  syncNoPickerFromInput();
+  document.getElementById('noPicker').classList.add('open');
+}
+function closeNoPicker(){
+  document.getElementById('noPicker').classList.remove('open');
+}
+document.addEventListener('click',e=>{
+  const wrap=document.querySelector('.no-filter-wrap');
+  const picker=document.getElementById('noPicker');
+  if(wrap&&picker&&picker.classList.contains('open')&&!wrap.contains(e.target)){
+    closeNoPicker();
+  }
+});
+
 function renderSite(){
   const rows=filteredRoutes(); const n=rows.length||1;
   document.getElementById('rowcount').textContent=rows.length+" / "+ROUTES.length+" เส้นทาง";
@@ -557,6 +645,7 @@ function editField(id,field,val){
 }
 
 ['fNo','fPhase','fDistrict','fController','fStatus','fSearch'].forEach(id=>document.getElementById(id).addEventListener('input',renderSite));
+document.getElementById('fNo').addEventListener('input',()=>{ if(noPickerBuilt)syncNoPickerFromInput(); });
 
 let _scrollSyncing=false;
 function syncTopScroll(){
