@@ -531,7 +531,11 @@ function renderSite(){
 
 function editField(id,field,val){
   const r=ROUTES.find(x=>x.id===id); if(!r) return;
-  if(field.includes('plan')||field.includes('actual')) r[field]= val===""?null:Number(val);
+  // เฉพาะช่อง "จุด Plan/Actual" (ตัวเลข) เท่านั้นที่ต้องแปลงเป็น Number — ใช้รายชื่อช่องตรงๆ
+  // (ห้ามใช้ field.includes('plan') เพราะ 'survey_plan' (ช่องวันที่แผนสำรวจ) ก็มีคำว่า plan อยู่ด้วย
+  //  ทำให้ Number("2026-07-15") กลายเป็น NaN และแก้วันที่ในช่องนั้นไม่ได้ — บั๊กนี้แก้แล้ว 29 มิ.ย. 2569)
+  const numericFields=['adss_plan','adss_actual','cut_plan','cut_actual'];
+  if(numericFields.includes(field)) r[field]= val===""?null:Number(val);
   else r[field]=val;
   recompute();
   renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderSite();
