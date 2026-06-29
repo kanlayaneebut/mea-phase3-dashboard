@@ -198,9 +198,11 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
     </label>
     <button class="btn gold" onclick="exportExcel()">⬇️ ส่งออก Excel (โครงสร้างเดิม)</button>
     <button class="btn green" onclick="saveLocal()">💾 บันทึกการกรอก (ในเครื่อง)</button>
+    <button class="btn" onclick="exportUpdatedSite()" style="border-color:#7c3aed;color:#7c3aed">📦 ส่งออกเว็บอัปเดต (สำหรับอัปโหลดใหม่)</button>
     <button class="btn" onclick="window.print()" style="border-color:var(--mea-blue);color:var(--mea-blue)">🖨️ พิมพ์ / บันทึก PDF</button>
     <span class="hint" id="dataSrc"></span>
   </div>
+  <p class="hint" style="margin:-8px 0 14px 2px">💡 "บันทึกการกรอก" เก็บแค่ในเครื่องนี้เท่านั้น ถ้าต้องการให้ <b>ทุกคนที่เปิดเว็บเห็นข้อมูลเดียวกัน</b> ให้กด "📦 ส่งออกเว็บอัปเดต" แล้วนำไฟล์ที่ได้ไปอัปโหลดทับที่ Vercel</p>
 
   <div class="kpis" id="kpis"></div>
 
@@ -251,7 +253,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 </div>
 
 <script>
-const TODAY = new Date(2026,5,21);
+const TODAY = new Date(); TODAY.setHours(0,0,0,0); // ใช้วันที่ปัจจุบันจริงเสมอ (ไม่ต้อง hardcode แก้มืออีกแล้ว)
 const CONTRACT_END = new Date(2027,3,22);
 const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:5, cat:5};
 const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"ADSS OFC", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
@@ -556,6 +558,23 @@ window.addEventListener('load',()=>{
 function saveLocal(){
   try{ localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES)); alert('บันทึกแล้ว ✓ (เก็บในเบราว์เซอร์เครื่องนี้) — เปิดไฟล์ครั้งหน้าจะโหลดให้อัตโนมัติ'); }
   catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
+}
+async function exportUpdatedSite(){
+  try{
+    const res = await fetch(location.href, {cache:'no-store'});
+    let text = await res.text();
+    const newRoutes = 'let ROUTES = ' + JSON.stringify(ROUTES) + ';';
+    text = text.replace(/let ROUTES = \[.*?\];/s, newRoutes);
+    const blob = new Blob([text], {type:'text/html;charset=utf-8'});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url; a.download = 'dashboard.html';
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+    alert('ดาวน์โหลดไฟล์ dashboard.html ที่อัปเดตแล้ว ✓ — นำไฟล์นี้ไปอัปโหลดทับที่ Vercel เพื่อเผยแพร่ให้ทุกคนเห็น');
+  }catch(e){
+    alert('สร้างไฟล์ไม่สำเร็จ: '+e.message+' (ลองใหม่ หรือใช้ปุ่ม ⬇️ ส่งออก Excel แทน)');
+  }
 }
 (function loadLocal(){
   try{ const s=localStorage.getItem('mea_phase3_routes'); if(s){ const d=JSON.parse(s); if(Array.isArray(d)&&d.length){ ROUTES=d; document.getElementById('dataSrc').innerHTML='แหล่งข้อมูล: <b style="color:#0b3d91">ข้อมูลที่บันทึกในเครื่อง</b>'; } } }catch(e){}
