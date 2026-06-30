@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Dashboard ติดตามงานจัดระเบียบสายสื่อสาร Phase 3 — MEA</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/12.15.0/firebase-firestore-compat.js"></script>
 <style>
 :root{
   --mea-blue:#0b3d91; --mea-blue2:#1456c4; --mea-gold:#f5a623;
@@ -120,6 +122,7 @@ td.l,th.l{text-align:left}
 .save-toast .save-btn:hover{background:#e0941a}
 .save-toast .close-btn{background:rgba(255,255,255,.14);color:#fff}
 .save-toast .close-btn:hover{background:rgba(255,255,255,.24)}
+.save-toast.toast-warn{background:#92400e}
 .statuspill{font-size:11px;font-weight:700;padding:3px 9px;border-radius:20px;white-space:nowrap;display:inline-block}
 .s-none{background:#f1f5f9;color:#475569} .s-survey{background:#e0f2fe;color:#0369a1}
 .s-install{background:#dbeafe;color:#1d4ed8} .s-done{background:#dcfce7;color:#15803d} .s-late{background:#fee2e2;color:#b91c1c}
@@ -200,8 +203,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 </head>
 <body>
 <div id="saveToast" class="save-toast">
-  <span class="msg">มีการแก้ไขข้อมูล — ต้องการบันทึกเลยหรือไม่?</span>
-  <button type="button" class="save-btn" onclick="saveLocal()">💾 บันทึกเลย</button>
+  <span class="msg" id="saveToastMsg">✓ บันทึกแล้ว — sync ทุกเครื่องอัตโนมัติ</span>
   <button type="button" class="close-btn" onclick="hideSaveToast()">ปิด</button>
 </div>
 <div class="wrap">
@@ -221,12 +223,13 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
       <input id="fileUp" type="file" accept=".xlsx,.xls" style="display:none">
     </label>
     <button class="btn gold" onclick="exportExcel()">⬇️ ส่งออก Excel (โครงสร้างเดิม)</button>
-    <button class="btn green" onclick="saveLocal()">💾 บันทึกการกรอก (ในเครื่อง)</button>
-    <button class="btn" onclick="exportUpdatedSite()" style="border-color:#7c3aed;color:#7c3aed">📦 ส่งออกเว็บอัปเดต (สำหรับอัปโหลดใหม่)</button>
+    <button class="btn green" onclick="saveLocal()">💾 บันทึกสำรองในเครื่องนี้</button>
+    <button class="btn" onclick="exportUpdatedSite()" style="border-color:#7c3aed;color:#7c3aed">📦 ส่งออกเว็บอัปเดต (สำรอง/migrate)</button>
     <button class="btn" onclick="window.print()" style="border-color:var(--mea-blue);color:var(--mea-blue)">🖨️ พิมพ์ / บันทึก PDF</button>
     <span class="hint" id="dataSrc"></span>
+    <span class="hint" id="cloudStatus" style="font-weight:700"></span>
   </div>
-  <p class="hint" style="margin:-8px 0 14px 2px">💡 "บันทึกการกรอก" เก็บแค่ในเครื่องนี้เท่านั้น ถ้าต้องการให้ <b>ทุกคนที่เปิดเว็บเห็นข้อมูลเดียวกัน</b> ให้กด "📦 ส่งออกเว็บอัปเดต" แล้วนำไฟล์ที่ได้ไปอัปโหลดทับที่ Vercel</p>
+  <p class="hint" style="margin:-8px 0 14px 2px">💡 ทุกการแก้ไขในตาราง "รายเส้นทาง" จะ <b>sync ขึ้นฐานข้อมูลกลางอัตโนมัติทันที</b> ทุกเครื่อง/เบราว์เซอร์ที่เปิดเว็บนี้จะเห็นข้อมูลล่าสุดตรงกัน ไม่ต้องกดบันทึกหรืออัปโหลดไฟล์เองอีก (ปุ่ม "บันทึกสำรองในเครื่องนี้" และ "ส่งออกเว็บอัปเดต" เก็บไว้เป็นทางสำรองเผื่อฐานข้อมูลกลางขัดข้อง)</p>
 
   <div class="kpis" id="kpis"></div>
 
@@ -646,7 +649,81 @@ function renderSite(){
   });
 }
 
+// ====== ฐานข้อมูลกลาง (Firebase Firestore) — sync real-time ทุกเครื่อง ======
+// วิธีตั้งค่า: แทนค่าใน FIREBASE_CONFIG ด้านล่างด้วยค่าจริงจาก Firebase Console ของโปรเจกต์
+const FIREBASE_CONFIG = {
+  apiKey: "AIzaSyADT2gWaui1isSuyoiHlt7xd2S0mnxq6Yw",
+  authDomain: "mea-phase3.firebaseapp.com",
+  projectId: "mea-phase3",
+  storageBucket: "mea-phase3.firebasestorage.app",
+  messagingSenderId: "290046510906",
+  appId: "1:290046510906:web:03a781c0e8e9ae23ea7203"
+};
+const CLOUD_PIN = ""; // ถ้าตั้งรหัส ผู้แก้ไขข้อมูลต้องกรอกก่อน (ขอครั้งเดียวต่อเซสชัน) — เว้น "__MEA_PIN__" ไว้ = ไม่ป้องกัน
+const CLOUD_COLLECTION = "mea_phase3";
+const CLOUD_DOC_ID = "routes";
+
+let cloudDb=null, cloudReady=false;
+
+function isFirebaseConfigured(){
+  return !!(FIREBASE_CONFIG.apiKey && !String(FIREBASE_CONFIG.apiKey).startsWith('__'));
+}
+function setCloudStatus(html){ const el=document.getElementById('cloudStatus'); if(el) el.innerHTML=html; }
+
+function initCloudSync(){
+  if(!isFirebaseConfigured()){
+    setCloudStatus('<span style="color:#92400e">⚠️ ยังไม่เชื่อมฐานข้อมูลกลาง — ใช้ข้อมูลในเครื่อง</span>');
+    loadFromLocalFallback();
+    return;
+  }
+  try{
+    if(!firebase.apps || !firebase.apps.length) firebase.initializeApp(FIREBASE_CONFIG);
+    cloudDb = firebase.firestore();
+    const docRef = cloudDb.collection(CLOUD_COLLECTION).doc(CLOUD_DOC_ID);
+    docRef.onSnapshot(snap=>{
+      cloudReady = true;
+      if(snap.exists){
+        const data = snap.data();
+        if(data && Array.isArray(data.routes) && data.routes.length){
+          ROUTES = data.routes;
+          setCloudStatus('<span style="color:#0b7d3d">☁️ เชื่อมฐานข้อมูลกลางแล้ว — sync real-time</span>');
+          render();
+        }
+      }else{
+        docRef.set({routes: ROUTES, updatedAt: firebase.firestore.FieldValue.serverTimestamp()}).catch(e=>console.error('seed cloud failed',e));
+        setCloudStatus('<span style="color:#0b7d3d">☁️ เชื่อมฐานข้อมูลกลางแล้ว — sync real-time</span>');
+      }
+    }, err=>{
+      console.error('Firestore sync error', err);
+      cloudReady=false;
+      setCloudStatus('<span style="color:#92400e">⚠️ เชื่อมฐานข้อมูลกลางไม่ได้ — ใช้ข้อมูลในเครื่องชั่วคราว</span>');
+      loadFromLocalFallback();
+    });
+  }catch(e){
+    console.error('initCloudSync failed', e);
+    setCloudStatus('<span style="color:#92400e">⚠️ เชื่อมฐานข้อมูลกลางไม่ได้ — ใช้ข้อมูลในเครื่องชั่วคราว</span>');
+    loadFromLocalFallback();
+  }
+}
+
+function loadFromLocalFallback(){
+  try{
+    const s=localStorage.getItem('mea_phase3_routes');
+    if(s){ const d=JSON.parse(s); if(Array.isArray(d)&&d.length){ ROUTES=d; document.getElementById('dataSrc').innerHTML='แหล่งข้อมูล: <b style="color:#0b3d91">ข้อมูลที่บันทึกในเครื่องนี้</b>'; render(); } }
+  }catch(e){}
+}
+
+function ensurePin(){
+  if(!CLOUD_PIN || String(CLOUD_PIN).startsWith('__') || CLOUD_PIN==='') return true;
+  try{ if(sessionStorage.getItem('mea_pin_ok')==='1') return true; }catch(e){}
+  const input = prompt('กรอกรหัส PIN เพื่อแก้ไขข้อมูล (ขอครั้งเดียวต่อเซสชัน):');
+  if(input===CLOUD_PIN){ try{ sessionStorage.setItem('mea_pin_ok','1'); }catch(e){} return true; }
+  alert('รหัส PIN ไม่ถูกต้อง — การแก้ไขนี้จะไม่ถูกบันทึก');
+  return false;
+}
+
 function editField(id,field,val){
+  if(!ensurePin()){ render(); return; }
   const r=ROUTES.find(x=>x.id===id); if(!r) return;
   // เฉพาะช่อง "จุด Plan/Actual" (ตัวเลข) เท่านั้นที่ต้องแปลงเป็น Number — ใช้รายชื่อช่องตรงๆ
   // (ห้ามใช้ field.includes('plan') เพราะ 'survey_plan' (ช่องวันที่แผนสำรวจ) ก็มีคำว่า plan อยู่ด้วย
@@ -656,16 +733,28 @@ function editField(id,field,val){
   else r[field]=val;
   recompute();
   renderKPI(); renderPhases(); renderBatch(); renderMSProgress(); renderMatrix(); renderSite();
-  showSaveToast();
+  saveToCloud();
+}
+
+let _cloudSaveTimer=null;
+function saveToCloud(){
+  if(!cloudReady || !cloudDb){ saveLocal(true); return; }
+  clearTimeout(_cloudSaveTimer);
+  _cloudSaveTimer=setTimeout(()=>{
+    cloudDb.collection(CLOUD_COLLECTION).doc(CLOUD_DOC_ID).set({routes: ROUTES, updatedAt: firebase.firestore.FieldValue.serverTimestamp()})
+      .then(()=>{ showSaveToast('✓ บันทึกแล้ว — sync ทุกเครื่องอัตโนมัติ', true); })
+      .catch(e=>{ showSaveToast('⚠️ บันทึกขึ้นฐานข้อมูลกลางไม่สำเร็จ — เก็บไว้ในเครื่องนี้ก่อน', false); saveLocal(true); });
+  }, 800);
 }
 
 let _saveToastTimer=null;
-function showSaveToast(){
-  const el=document.getElementById('saveToast');
-  if(!el) return;
+function showSaveToast(msg, ok){
+  const el=document.getElementById('saveToast'); if(!el) return;
+  const m=document.getElementById('saveToastMsg'); if(m) m.textContent = msg || '✓ บันทึกแล้ว — sync ทุกเครื่องอัตโนมัติ';
+  el.classList.toggle('toast-warn', ok===false);
   el.classList.add('show');
   clearTimeout(_saveToastTimer);
-  _saveToastTimer=setTimeout(hideSaveToast,8000);
+  _saveToastTimer=setTimeout(hideSaveToast,4000);
 }
 function hideSaveToast(){
   const el=document.getElementById('saveToast');
@@ -692,9 +781,12 @@ window.addEventListener('load',()=>{
   }
 });
 
-function saveLocal(){
-  try{ localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES)); hideSaveToast(); alert('บันทึกแล้ว ✓ (เก็บในเบราว์เซอร์เครื่องนี้) — เปิดไฟล์ครั้งหน้าจะโหลดให้อัตโนมัติ'); }
-  catch(e){ alert('บันทึกไม่สำเร็จ: '+e.message); }
+function saveLocal(silent){
+  try{
+    localStorage.setItem('mea_phase3_routes', JSON.stringify(ROUTES));
+    if(!silent){ hideSaveToast(); alert('บันทึกสำรองในเครื่องนี้แล้ว ✓ (ใช้เป็นข้อมูลสำรองเผื่อฐานข้อมูลกลางขัดข้องเท่านั้น — เครื่องอื่นจะไม่เห็นข้อมูลนี้)'); }
+  }
+  catch(e){ if(!silent) alert('บันทึกไม่สำเร็จ: '+e.message); }
 }
 async function exportUpdatedSite(){
   try{
@@ -708,14 +800,12 @@ async function exportUpdatedSite(){
     a.href = url; a.download = 'dashboard.html';
     document.body.appendChild(a); a.click(); document.body.removeChild(a);
     URL.revokeObjectURL(url);
-    alert('ดาวน์โหลดไฟล์ dashboard.html ที่อัปเดตแล้ว ✓ — นำไฟล์นี้ไปอัปโหลดทับที่ Vercel เพื่อเผยแพร่ให้ทุกคนเห็น');
+    alert('ดาวน์โหลดไฟล์ dashboard.html ที่อัปเดตแล้ว ✓ (ใช้สำรอง/ย้ายฐานข้อมูลเท่านั้น ปกติไม่ต้องใช้ปุ่มนี้แล้วเพราะ sync อัตโนมัติ)');
   }catch(e){
     alert('สร้างไฟล์ไม่สำเร็จ: '+e.message+' (ลองใหม่ หรือใช้ปุ่ม ⬇️ ส่งออก Excel แทน)');
   }
 }
-(function loadLocal(){
-  try{ const s=localStorage.getItem('mea_phase3_routes'); if(s){ const d=JSON.parse(s); if(Array.isArray(d)&&d.length){ ROUTES=d; document.getElementById('dataSrc').innerHTML='แหล่งข้อมูล: <b style="color:#0b3d91">ข้อมูลที่บันทึกในเครื่อง</b>'; } } }catch(e){}
-})();
+initCloudSync();
 
 document.getElementById('fileUp').addEventListener('change',e=>{
   const f=e.target.files[0]; if(!f) return;
