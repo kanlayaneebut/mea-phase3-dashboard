@@ -611,7 +611,32 @@ function renderSite(){
    </tr>
   </thead>`;
 
-  let body='<tbody>';
+  // ---- แถวสรุป (เหมือน Sheets row 7) ----
+  const cnt=f=>rows.filter(r=>r[f]&&r[f]!=='').length;
+  const sumF=f=>rows.reduce((s,r)=>s+(r[f]||0),0);
+  const avgPct=rows.length?rows.reduce((s,r)=>s+(r._pct||0),0)/rows.length:0;
+  const SB='background:#e8edf8;font-weight:700;font-size:12px;color:#1e3a6e';
+  const SS=SB+';position:sticky;z-index:2';
+  const fmt0=v=>v?v.toFixed(2):'';
+
+  let body=`<tbody><tr style="${SB};border-top:2px solid #b0bde0;border-bottom:2px solid #b0bde0">
+   <td class="sticky0" style="${SS};left:0;box-shadow:1px 0 0 #b0bde0">∑</td>
+   <td class="sticky1 l" style="${SS};left:46px;box-shadow:1px 0 0 #b0bde0">${rows.length} เส้นทาง · ${sumF('km').toFixed(2)} กม.</td>
+   <td></td>
+   <td style="text-align:right;${SB}">${sumF('km').toFixed(2)}</td>
+   <td></td><td></td>
+   <td style="${SB}">${cnt('survey_plan')}</td><td style="${SB}">${cnt('survey_start')}</td><td style="${SB}">${cnt('survey_end')}</td>
+   <td style="${SB}">${cnt('submit')}</td>
+   <td style="${SB}">${cnt('rev0')}</td><td style="${SB}">${cnt('rev1')}</td><td style="${SB}">${cnt('rev2')}</td><td style="${SB}">${cnt('rev3')}</td>
+   <td style="${SB}">${fmt0(sumF('adss_plan'))}</td><td style="${SB}">${fmt0(sumF('adss_actual'))}</td><td style="${SB}">${cnt('adss_start')}</td><td style="${SB}">${cnt('adss_end')}</td>
+   <td style="${SB}">${cnt('inspect_start')}</td><td style="${SB}">${cnt('inspect_end')}</td>
+   <td style="${SB}">${sumF('cut_plan')||''}</td><td style="${SB}">${sumF('cut_actual')||''}</td><td style="${SB}">${cnt('cut_start')}</td><td style="${SB}">${cnt('cut_end')}</td>
+   <td style="${SB}">${cnt('rm_start')}</td><td style="${SB}">${cnt('rm_end')}</td>
+   <td style="${SB}">${cnt('meacheck_start')}</td><td style="${SB}">${cnt('meacheck_end')}</td>
+   <td style="${SB}">${cnt('cat')}</td>
+   <td style="${SB}">${avgPct.toFixed(1)}%</td>
+   <td></td>
+  </tr>`;
   rows.forEach(r=>{
     body+=`<tr>
      <td class="sticky0">${r.id}</td>
