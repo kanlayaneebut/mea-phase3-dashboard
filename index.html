@@ -223,6 +223,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
       <input id="fileUp" type="file" accept=".xlsx,.xls" style="display:none">
     </label>
     <button class="btn gold" onclick="exportExcel()">⬇️ ส่งออก Excel (โครงสร้างเดิม)</button>
+    <button class="btn" onclick="syncFromGoogleSheets()" title="ดึงข้อมูลล่าสุดจาก Google Sheets แล้ว sync ขึ้น Firestore">🔄 Sync จาก Google Sheets</button>
     <button class="btn green" onclick="saveLocal()">💾 บันทึกสำรองในเครื่องนี้</button>
     <button class="btn" onclick="exportUpdatedSite()" style="border-color:#7c3aed;color:#7c3aed">📦 ส่งออกเว็บอัปเดต (สำรอง/migrate)</button>
     <button class="btn" onclick="window.print()" style="border-color:var(--mea-blue);color:var(--mea-blue)">🖨️ พิมพ์ / บันทึก PDF</button>
@@ -843,6 +844,81 @@ document.getElementById('fileUp').addEventListener('change',e=>{
   };
   rd.readAsArrayBuffer(f);
 });
+
+
+// ───────────────────────────────────────────────────────────────
+// SYNC FROM GOOGLE SHEETS
+// ───────────────────────────────────────────────────────────────
+const SHEETS_CSV_URL = "https://docs.google.com/spreadsheets/d/1JqWwiseb3_epYZKFCm0Uo0rXBqNopBU7U8eC9mUp-pA/gviz/tq?tqx=out:csv&sheet=Update%20Progress";
+
+function parseCSV(text){
+  const rows=[]; let row=[],cell="",inQ=false;
+  for(let i=0;i<text.length;i++){
+    const ch=text[i];
+    if(inQ){ if(ch==='"'){ if(text[i+1]==='"'){cell+='"';i++;}else inQ=false; }else cell+=ch; }
+    else{
+      if(ch==='"') inQ=true;
+      else if(ch===','){row.push(cell.trim());cell="";}
+      else if(ch==='\n'){row.push(cell.trim());rows.push(row);row=[];cell="";}
+      else if(ch!=='\r') cell+=ch;
+    }
+  }
+  if(cell||row.length){row.push(cell.trim());rows.push(row);}
+  return rows;
+}
+
+async function syncFromGoogleSheets(){
+  showSaveToast('⏳ กำลัง sync จาก Google Sheets...', null);
+  try{
+    const res = await fetch(SHEETS_CSV_URL);
+    if(!res.ok) throw new Error('HTTP '+res.status);
+    const csvText = await res.text();
+    const rows = parseCSV(csvText);
+
+    const norm=v=>{ if(!v) return ""; const s=(""+v).trim(); const m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if(m){let y=+m[1]; if(y>2500)y-=543; if(y<2000) y=(+m[2]>=5?2026:2027); return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;} const m2=s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/); if(m2){let y=+m2[3]; if(y>2500)y-=543; if(y<100)y+=2000; return `${y}-${String(+m2[2]).padStart(2,'0')}-${String(+m2[1]).padStart(2,'0')}`;} return ""; };
+    const num=v=>{ if(v===""||v==null) return null; const x=Number((""+v).replace(/[^0-9.]/g,'')); return isNaN(x)?null:x; };
+
+    const sheetMap={};
+    for(let i=7;i<rows.length;i++){
+      const row=rows[i]; if(!row||row[0]==null||row[0]==="") continue;
+      const id=parseInt(row[0]); if(isNaN(id)) continue;
+      sheetMap[id]={
+        id, name:row[1]||"", district:row[2]||"", km:num(row[3])||0, controller:row[4]||"",
+        phase:parseInt(row[6])||1,
+        survey_plan:norm(row[7]), survey_start:norm(row[8]), survey_end:norm(row[9]),
+        submit:norm(row[10]), rev0:norm(row[11]), rev1:norm(row[12]), rev2:norm(row[13]), rev3:norm(row[14]),
+        adss_plan:num(row[15]), adss_actual:num(row[16]), adss_start:norm(row[17]), adss_end:norm(row[18]),
+        inspect_start:norm(row[19]), inspect_end:norm(row[20]),
+        cut_plan:num(row[21]), cut_actual:num(row[22]), cut_start:norm(row[23]), cut_end:norm(row[24]),
+        rm_start:norm(row[25]), rm_end:norm(row[26]),
+        meacheck_start:norm(row[27]), meacheck_end:norm(row[28]),
+        cat:norm(row[29]), note:row[35]||""
+      };
+    }
+    if(!Object.keys(sheetMap).length) throw new Error("ไม่พบข้อมูลในชีต (ตรวจสอบว่าชีตชื่อ 'Update Progress')");
+
+    // Merge: update existing routes, add new ones from sheet
+    const existingMap={};
+    ROUTES.forEach(r=>existingMap[r.id]=r);
+    let updated=0, added=0;
+    Object.values(sheetMap).forEach(sr=>{
+      if(existingMap[sr.id]){ Object.assign(existingMap[sr.id], sr); updated++; }
+      else{ existingMap[sr.id]={...sr,_pct:0,_status:"ยังไม่เริ่ม",_late:false,_survey:"none"}; added++; }
+    });
+    ROUTES = Object.values(existingMap).sort((a,b)=>a.id-b.id);
+
+    // Save to Firestore immediately (bypass debounce)
+    if(cloudReady && cloudDb){
+      await cloudDb.collection(CLOUD_COLLECTION).doc(CLOUD_DOC_ID).set({routes:ROUTES, updatedAt:firebase.firestore.FieldValue.serverTimestamp()});
+    } else { saveLocal(true); }
+
+    render();
+    showSaveToast(`✅ Sync สำเร็จ: อัปเดต ${updated} + เพิ่มใหม่ ${added} เส้นทาง`, true);
+  } catch(e){
+    console.error('syncFromGoogleSheets error:', e);
+    showSaveToast('❌ Sync ไม่สำเร็จ: '+e.message, false);
+  }
+}
 
 function exportExcel(){
   const bd=iso=>{ if(!iso) return null; const [y,m,d]=iso.split('-'); return `${(+y>2500?+y:+y+543)}-${m}-${d}`; };
