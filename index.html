@@ -875,7 +875,9 @@ async function syncFromGoogleSheets(){
     const csvText = await res.text();
     const rows = parseCSV(csvText);
 
-    const norm=v=>{ if(!v) return ""; const s=(""+v).trim(); const m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if(m){let y=+m[1]; if(y>2500)y-=543; if(y<2000) y=(+m[2]>=5?2026:2027); return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;} const m2=s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/); if(m2){let y=+m2[3]; if(y>2500)y-=543; if(y<100)y+=2000; return `${y}-${String(+m2[2]).padStart(2,'0')}-${String(+m2[1]).padStart(2,'0')}`;} return ""; };
+    // norm(): แปลงวันที่จาก Sheets → ISO YYYY-MM-DD
+    // รองรับ: "16 มิ.ย. 69" (Thai BE 2-digit), "22/05/69" (numeric), "2026-06-16" (ISO)
+    const norm=v=>{if(!v)return "";const s=(""+v).trim();if(!s||s==='-')return "";const m=s.match(/^(\d{4})-(\d{1,2})-(\d{1,2})$/);if(m){let y=+m[1];if(y>2500)y-=543;return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;}const TH={'ม.ค.':1,'ก.พ.':2,'มี.ค.':3,'เม.ย.':4,'พ.ค.':5,'มิ.ย.':6,'ก.ค.':7,'ส.ค.':8,'ก.ย.':9,'ต.ค.':10,'พ.ย.':11,'ธ.ค.':12};const m3=s.match(/^(\d{1,2})\s+([฀-๿.]+)\s+(\d{2,4})$/);if(m3){const mo=TH[m3[2]];if(mo){let y=+m3[3];if(y<100)y+=1957;else if(y>2500)y-=543;return `${y}-${String(mo).padStart(2,'0')}-${String(+m3[1]).padStart(2,'0')}`;}}const m2=s.match(/^(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})$/);if(m2){let y=+m2[3];if(y<100)y+=1957;else if(y>2500)y-=543;return `${y}-${String(+m2[2]).padStart(2,'0')}-${String(+m2[1]).padStart(2,'0')}`;}return "";};
     const num=v=>{ if(v===""||v==null) return null; const x=Number((""+v).replace(/[^0-9.]/g,'')); return isNaN(x)?null:x; };
 
     // CSV column mapping (gviz has 2 extra cols at [5],[6] vs Excel):
@@ -899,7 +901,7 @@ async function syncFromGoogleSheets(){
         cut_plan:num(row[22]), cut_actual:num(row[23]), cut_start:norm(row[24]), cut_end:norm(row[25]),
         rm_start:norm(row[26]), rm_end:norm(row[27]),
         meacheck_start:norm(row[28]), meacheck_end:norm(row[29]),
-        cat:norm(row[30]), note:row[35]||""
+        cat:norm(row[30]), note:row[34]||""
       };
     }
     if(!Object.keys(sheetMap).length) throw new Error("ไม่พบข้อมูลในชีต (ตรวจสอบว่าชีตชื่อ 'Update Progress')");
