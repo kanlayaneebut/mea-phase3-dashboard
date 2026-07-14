@@ -878,21 +878,28 @@ async function syncFromGoogleSheets(){
     const norm=v=>{ if(!v) return ""; const s=(""+v).trim(); const m=s.match(/(\d{4})-(\d{1,2})-(\d{1,2})/); if(m){let y=+m[1]; if(y>2500)y-=543; if(y<2000) y=(+m[2]>=5?2026:2027); return `${y}-${String(+m[2]).padStart(2,'0')}-${String(+m[3]).padStart(2,'0')}`;} const m2=s.match(/(\d{1,2})[/.](\d{1,2})[/.](\d{2,4})/); if(m2){let y=+m2[3]; if(y>2500)y-=543; if(y<100)y+=2000; return `${y}-${String(+m2[2]).padStart(2,'0')}-${String(+m2[1]).padStart(2,'0')}`;} return ""; };
     const num=v=>{ if(v===""||v==null) return null; const x=Number((""+v).replace(/[^0-9.]/g,'')); return isNaN(x)?null:x; };
 
+    // CSV column mapping (gviz has 2 extra cols at [5],[6] vs Excel):
+    // [7]=phase [8]=survey_plan [9]=survey_start [10]=survey_end
+    // [11]=submit [12-15]=rev0-3 [16]=adss_plan [17]=adss_actual
+    // [18]=adss_start [19]=adss_end [20]=inspect_start [21]=inspect_end
+    // [22]=cut_plan [23]=cut_actual [24]=cut_start [25]=cut_end
+    // [26]=rm_start [27]=rm_end [28]=meacheck_start [29]=meacheck_end
+    // [30]=cat [35]=note  | data starts at row 2 (row 0=header, row 1=totals)
     const sheetMap={};
-    for(let i=7;i<rows.length;i++){
+    for(let i=2;i<rows.length;i++){
       const row=rows[i]; if(!row||row[0]==null||row[0]==="") continue;
       const id=parseInt(row[0]); if(isNaN(id)) continue;
       sheetMap[id]={
         id, name:row[1]||"", district:row[2]||"", km:num(row[3])||0, controller:row[4]||"",
-        phase:parseInt(row[6])||1,
-        survey_plan:norm(row[7]), survey_start:norm(row[8]), survey_end:norm(row[9]),
-        submit:norm(row[10]), rev0:norm(row[11]), rev1:norm(row[12]), rev2:norm(row[13]), rev3:norm(row[14]),
-        adss_plan:num(row[15]), adss_actual:num(row[16]), adss_start:norm(row[17]), adss_end:norm(row[18]),
-        inspect_start:norm(row[19]), inspect_end:norm(row[20]),
-        cut_plan:num(row[21]), cut_actual:num(row[22]), cut_start:norm(row[23]), cut_end:norm(row[24]),
-        rm_start:norm(row[25]), rm_end:norm(row[26]),
-        meacheck_start:norm(row[27]), meacheck_end:norm(row[28]),
-        cat:norm(row[29]), note:row[35]||""
+        phase:parseInt(row[7])||1,
+        survey_plan:norm(row[8]), survey_start:norm(row[9]), survey_end:norm(row[10]),
+        submit:norm(row[11]), rev0:norm(row[12]), rev1:norm(row[13]), rev2:norm(row[14]), rev3:norm(row[15]),
+        adss_plan:num(row[16]), adss_actual:num(row[17]), adss_start:norm(row[18]), adss_end:norm(row[19]),
+        inspect_start:norm(row[20]), inspect_end:norm(row[21]),
+        cut_plan:num(row[22]), cut_actual:num(row[23]), cut_start:norm(row[24]), cut_end:norm(row[25]),
+        rm_start:norm(row[26]), rm_end:norm(row[27]),
+        meacheck_start:norm(row[28]), meacheck_end:norm(row[29]),
+        cat:norm(row[30]), note:row[35]||""
       };
     }
     if(!Object.keys(sheetMap).length) throw new Error("ไม่พบข้อมูลในชีต (ตรวจสอบว่าชีตชื่อ 'Update Progress')");
