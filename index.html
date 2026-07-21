@@ -380,6 +380,7 @@ function renderPhases(){
     const rs=ROUTES.filter(r=>r.phase===p), m=PHASE_META[p];
     const avg=rs.reduce((a,r)=>a+r._pct,0)/rs.length;
     const km=rs.reduce((a,r)=>a+r.km,0); cum+=km;
+    const doneKm=rs.reduce((a,r)=>a+(r.km||0)*(r._pct||0)/100,0);
     const done=rs.filter(r=>r._status==="เสร็จสมบูรณ์").length, late=rs.filter(r=>r._late).length;
     const cumPct=Math.min(100,cum/m.cumTarget*100), under=cum<m.cumTarget;
     return `<div class="pcard p${p}">
@@ -389,7 +390,8 @@ function renderPhases(){
       <div class="pbar"><span style="width:${avg}%"></span></div>
       <div class="grid2">
         <div class="box"><div class="t">เส้นทางเสร็จ/ทั้งหมด</div><div class="v">${done} / ${rs.length}</div></div>
-        <div class="box"><div class="t">ระยะทางสะสม / เป้า</div><div class="v">${fmt(cum)} / ${m.cumTarget} กม.</div>
+        <div class="box"><div class="t">ทำเสร็จแล้ว (งวดนี้)</div><div class="v" style="color:var(--green)">${doneKm.toFixed(2)} กม.</div></div>
+        <div class="box" style="grid-column:1/-1"><div class="t">ระยะทางสะสม / เป้า</div><div class="v">${fmt(cum)} / ${m.cumTarget} กม.</div>
           <div class="kmbar ${under?'under':''}"><span style="width:${cumPct}%"></span></div></div>
       </div></div>`;
   }).join('');
