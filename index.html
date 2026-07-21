@@ -367,7 +367,7 @@ function renderKPI(){
     {l:"เส้นทางทั้งหมด",v:total,s:fmt(totalKm)+" กม.",c:"accent"},
     {l:"% รวมทั้งโครงการ",v:overall.toFixed(1)+"%",s:"เฉลี่ยถ่วงน้ำหนัก",c:"blue"},
     {l:"Survey เสร็จ",v:surveyDone+"/"+total,s:(surveyDone/total*100).toFixed(0)+"% (งานเตรียม)",c:""},
-    {l:"เสร็จสมบูรณ์",v:done,s:"เส้นทางปิดครบ · "+fmt(doneKm)+" กม.",c:"green"},
+    {l:"เสร็จสมบูรณ์",v:done+" / "+fmt(doneKm)+" กม.",s:"เส้นทางปิดครบ",c:"green"},
     {l:"กำลังดำเนินการ",v:working,s:"สำรวจ+ติดตั้ง",c:"blue"},
     {l:"ล่าช้า (ธงแดง)",v:late,s:"เกินวันส่งมอบงวด",c:"red"},
     {l:"วันคงเหลือ",v:daysLeft,s:"ถึง 22 เม.ย. 2570",c:"accent"}
