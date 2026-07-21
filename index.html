@@ -298,7 +298,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 <script>
 const TODAY = new Date(); TODAY.setHours(0,0,0,0); // ใช้วันที่ปัจจุบันจริงเสมอ (ไม่ต้อง hardcode แก้มืออีกแล้ว)
 const CONTRACT_END = new Date(2027,3,22);
-const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:5, cat:5};
+const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:10, cat:0};
 const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"ADSS OFC", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
 const MS_ORDER = ["submit","approve","adss","inspect","cutover","removal","cat"];
 const MS_GROUP = {submit:"MS2",approve:"MS2",adss:"MS3",inspect:"MS3",cutover:"MS3",removal:"MS3",cat:"CAT"};
@@ -593,9 +593,9 @@ function renderSite(){
     <th colspan="4" class="grp-install">ADSS OFC<span class="wt">น้ำหนัก 50%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('adss')}%</span></th>
     <th colspan="2" class="grp-install">ตรวจสอบสาย ADSS<span class="wt">น้ำหนัก 10%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('inspect')}%</span></th>
     <th colspan="4" class="grp-install">Cut Over<span class="wt">น้ำหนัก 20%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('cutover')}%</span></th>
-    <th colspan="2" class="grp-install">รื้อถอนเคเบิลเก่า<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('removal')}%</span></th>
+    <th colspan="2" class="grp-install">รื้อถอนเคเบิลเก่า<span class="wt">น้ำหนัก 10%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('removal')}%</span></th>
     <th colspan="2" class="grp-install">MEA ตรวจสอบงานติดตั้ง</th>
-    <th rowspan="3" class="grp-cat">CAT Document<span class="wt">น้ำหนัก 5%</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('cat')}%</span></th>
+    <th rowspan="3" class="grp-cat">CAT Document<span class="wt">ไม่คิด %</span><span class="hpct"><span class="hl">ทำเสร็จ</span>${hp('cat')}%</span></th>
     <th rowspan="3">% เส้นนี้</th>
     <th rowspan="3">สถานะ</th>
    </tr>
