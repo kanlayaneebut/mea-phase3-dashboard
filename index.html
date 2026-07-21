@@ -935,15 +935,14 @@ async function syncFromGoogleSheets(){
     }
     if(!Object.keys(sheetMap).length) throw new Error("ไม่พบข้อมูลในชีต (ตรวจสอบว่าชีตชื่อ 'Update Progress')");
 
-    // Merge: update existing routes, add new ones from sheet
-    const existingMap={};
-    ROUTES.forEach(r=>existingMap[r.id]=r);
+    // Full replace from Sheet — Sheet คือ source of truth ทั้งหมด
+    const existingById={};
+    ROUTES.forEach(r=>existingById[r.id]=r);
     let updated=0, added=0;
-    Object.values(sheetMap).forEach(sr=>{
-      if(existingMap[sr.id]){ Object.assign(existingMap[sr.id], sr); updated++; }
-      else{ existingMap[sr.id]={...sr,_pct:0,_status:"ยังไม่เริ่ม",_late:false,_survey:"none"}; added++; }
-    });
-    ROUTES = Object.values(existingMap).sort((a,b)=>a.id-b.id);
+    ROUTES = Object.values(sheetMap).map(sr=>{
+      if(existingById[sr.id]){ updated++; return {...existingById[sr.id], ...sr}; }
+      else{ added++; return {...sr,_pct:0,_status:"ยังไม่เริ่ม",_late:false,_survey:"none"}; }
+    }).sort((a,b)=>a.id-b.id);
 
     // Save to Firestore immediately (bypass debounce)
     if(cloudReady && cloudDb){
