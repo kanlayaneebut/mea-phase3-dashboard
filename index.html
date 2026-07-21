@@ -358,6 +358,7 @@ function renderKPI(){
   const total=ROUTES.length, totalKm=ROUTES.reduce((a,r)=>a+r.km,0);
   const overall=ROUTES.reduce((a,r)=>a+r._pct,0)/total;
   const done=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").length;
+  const doneKm=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").reduce((a,r)=>a+r.km,0);
   const working=ROUTES.filter(r=>r._status==="กำลังติดตั้ง"||r._status==="กำลังสำรวจ").length;
   const late=ROUTES.filter(r=>r._late).length;
   const daysLeft=Math.ceil((CONTRACT_END-TODAY)/(1000*3600*24));
@@ -366,7 +367,7 @@ function renderKPI(){
     {l:"เส้นทางทั้งหมด",v:total,s:fmt(totalKm)+" กม.",c:"accent"},
     {l:"% รวมทั้งโครงการ",v:overall.toFixed(1)+"%",s:"เฉลี่ยถ่วงน้ำหนัก",c:"blue"},
     {l:"Survey เสร็จ",v:surveyDone+"/"+total,s:(surveyDone/total*100).toFixed(0)+"% (งานเตรียม)",c:""},
-    {l:"เสร็จสมบูรณ์",v:done,s:"เส้นทางปิดครบ",c:"green"},
+    {l:"เสร็จสมบูรณ์",v:done,s:"เส้นทางปิดครบ · "+fmt(doneKm)+" กม.",c:"green"},
     {l:"กำลังดำเนินการ",v:working,s:"สำรวจ+ติดตั้ง",c:"blue"},
     {l:"ล่าช้า (ธงแดง)",v:late,s:"เกินวันส่งมอบงวด",c:"red"},
     {l:"วันคงเหลือ",v:daysLeft,s:"ถึง 22 เม.ย. 2570",c:"accent"}
@@ -618,8 +619,8 @@ function renderSite(){
   const cnt=f=>rows.filter(r=>r[f]&&r[f]!=='').length;
   const sumF=f=>rows.reduce((s,r)=>s+(r[f]||0),0);
   const avgPct=rows.length?rows.reduce((s,r)=>s+(r._pct||0),0)/rows.length:0;
-  const SB='background:#e8edf8;font-weight:700;font-size:12px;color:#1e3a6e';
-  const SS=SB+';position:sticky;z-index:2';
+  const SB='background:#e8edf8;font-weight:700;font-size:12px;color:#1e3a6e;position:sticky;top:136px;z-index:1';
+  const SS=SB+';z-index:3';
   const fmt0=v=>v?v.toFixed(2):'';
 
   let body=`<tbody><tr style="${SB};border-top:2px solid #b0bde0;border-bottom:2px solid #b0bde0">
