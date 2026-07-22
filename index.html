@@ -382,7 +382,7 @@ function renderPhases(){
     const avg=rs.reduce((a,r)=>a+r._pct,0)/rs.length;
     const km=rs.reduce((a,r)=>a+r.km,0); cum+=km;
     const doneKm=rs.reduce((a,r)=>a+(r.adss_actual||0),0);
-    const installing=rs.filter(r=>(r.adss_actual||0)>0).length, late=rs.filter(r=>r._late).length;
+    const installing=rs.filter(r=>!!r.adss_start).length, late=rs.filter(r=>r._late).length;
     const phaseTarget=p===1?m.cumTarget:m.cumTarget-PHASE_META[p-1].cumTarget;
     const phasePct=Math.min(100,km/phaseTarget*100), under=km<phaseTarget;
     return `<div class="pcard p${p}">
@@ -391,7 +391,7 @@ function renderPhases(){
       <div class="pct">${avg.toFixed(1)}%</div>
       <div class="pbar"><span style="width:${avg}%"></span></div>
       <div class="grid2">
-        <div class="box"><div class="t">ADSS OFC Actual / ทั้งหมด</div><div class="v">${installing} / ${rs.length}</div></div>
+        <div class="box"><div class="t">ADSS OFC เริ่มแล้ว / ทั้งหมด</div><div class="v">${installing} / ${rs.length}</div></div>
         <div class="box"><div class="t">ADSS ติดตั้งแล้ว (งวดนี้)</div><div class="v" style="color:var(--green)">${doneKm.toFixed(2)} กม.</div></div>
         <div class="box" style="grid-column:1/-1"><div class="t">ระยะทาง (งวดนี้) / เป้า</div><div class="v">${fmt(km)} / ${phaseTarget} กม.</div>
           <div class="kmbar ${under?'under':''}"><span style="width:${phasePct}%"></span></div></div>
