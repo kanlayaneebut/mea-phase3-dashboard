@@ -360,6 +360,8 @@ function renderKPI(){
   const done=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").length;
   const doneKm=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").reduce((a,r)=>a+r.km,0);
   const working=ROUTES.filter(r=>r._status==="กำลังติดตั้ง"||r._status==="กำลังสำรวจ").length;
+  const instCnt=ROUTES.filter(r=>r.adss_start).length;
+  const instKm=ROUTES.filter(r=>r.adss_start).reduce((a,r)=>a+(r.adss_actual||0),0);
   const late=ROUTES.filter(r=>r._late).length;
   const daysLeft=Math.ceil((CONTRACT_END-TODAY)/(1000*3600*24));
   const surveyDone=ROUTES.filter(r=>r._survey==="done").length;
@@ -367,8 +369,8 @@ function renderKPI(){
     {l:"เส้นทางทั้งหมด",v:total,s:fmt(totalKm)+" กม.",c:"accent"},
     {l:"% รวมทั้งโครงการ",v:overall.toFixed(1)+"%",s:"เฉลี่ยถ่วงน้ำหนัก",c:"blue"},
     {l:"Survey เสร็จ",v:surveyDone+"/"+total,s:(surveyDone/total*100).toFixed(0)+"% (งานเตรียม)",c:""},
+    {l:"กำลังติดตั้ง",v:instCnt+"/"+instKm.toFixed(2)+" กม.",s:"",c:"blue"},
     {l:"เสร็จสมบูรณ์",v:done+" / "+doneKm.toFixed(2)+" กม.",s:"เส้นทางปิดครบ",c:"green"},
-    {l:"กำลังดำเนินการ",v:working,s:"สำรวจ+ติดตั้ง",c:"blue"},
     {l:"ล่าช้า (ธงแดง)",v:late,s:"เกินวันส่งมอบงวด",c:"red"},
     {l:"วันคงเหลือ",v:daysLeft,s:"ถึง 22 เม.ย. 2570",c:"accent"}
   ];
@@ -400,14 +402,24 @@ function renderPhases(){
 }
 
 function renderMSProgress(){
-  const total=ROUTES.length, rows=[];
-  rows.push({ms:"MS1",lbl:"งานสำรวจ (Survey)",wt:"0%",done:ROUTES.filter(r=>r._survey==="done").length});
-  MS_ORDER.forEach(k=>rows.push({ms:MS_GROUP[k],lbl:MS_LABELS[k],wt:WEIGHTS[k]+"%",done:ROUTES.filter(r=>stepDone(r,k)).length}));
+  const total=ROUTES.length;
+  const rows=[
+    {ms:"MS1",lbl:"งานสำรวจ (Survey)",wt:"0%",f:r=>r._survey==="done",km:r=>r.km},
+    {ms:"MS2",lbl:"Design Submit",wt:"5%",f:r=>stepDone(r,"submit"),km:r=>r.km},
+    {ms:"MS2",lbl:"Design Approve",wt:"5%",f:r=>stepDone(r,"approve"),km:r=>r.km},
+    {ms:"MS3",lbl:"ADSS OFC",wt:"50%",f:r=>!!r.adss_end,km:r=>r.adss_actual||0},
+    {ms:"MS3",lbl:"กฟน.ตรวจสอบ",wt:"10%",f:r=>!!r.inspect_end,km:r=>r.adss_actual||0},
+    {ms:"MS3",lbl:"Cut Over",wt:"20%",f:r=>stepDone(r,"cutover"),km:r=>r.adss_actual||0},
+    {ms:"MS3",lbl:"รื้อถอนสายเก่า",wt:"10%",f:r=>!!r.rm_end,km:r=>r.adss_actual||0},
+    {ms:"CAT",lbl:"CAT Document",wt:"0%",f:r=>!!r.cat,km:r=>r.km}
+  ];
   document.getElementById('msProgress').innerHTML=rows.map(x=>{
-    const pct=x.done/total*100;
+    const rs=ROUTES.filter(x.f);
+    const done=rs.length, km=rs.reduce((a,r)=>a+x.km(r),0);
+    const pct=done/total*100;
     return `<div class="row"><div class="lbl"><b>${x.ms}</b>${x.lbl}<span class="wt">${x.wt}</span></div>
       <div class="track"><span class="${pct===0?'zero':''}" style="width:${pct}%"></span></div>
-      <div class="num">${x.done}/${total} <small>(${pct.toFixed(0)}%)</small></div></div>`;
+      <div class="num">${done}/${km.toFixed(2)} <small>(${pct.toFixed(0)}%)</small></div></div>`;
   }).join('');
 }
 
