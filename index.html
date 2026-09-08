@@ -926,8 +926,23 @@ async function syncFromGoogleSheets(){
     // [11]=submit [12-15]=rev0-3 [16]=adss_plan [17]=adss_actual
     // [18]=adss_start [19]=adss_end [20]=inspect_start [21]=inspect_end
     // [22]=cut_plan [23]=cut_actual [24]=cut_start [25]=cut_end
-    // [26]=rm_start [27]=rm_end [28]=meacheck_start [29]=meacheck_end
-    // [30]=cat [35]=note  | data starts at row 2 (row 0=header, row 1=totals)
+    // [26]=rm_start [27]=rm_end
+    // คอลัมน์ท้ายตาราง (% Complete → หมายเหตุ) อิงชื่อ header แทนเลขตายตัว
+    // เพื่อทนต่อการลบ/เพิ่มคอลัมน์ (เช่น ลบคอลัมน์ AD ที่ว่างอยู่)
+    // ปัจจุบัน: [28]=% Complete [29]=(ว่าง/AD) [30]=CAT [31][32]=MEAตรวจ [33]=งวดส่งมอบ
+    //           [34]=ส่งมอบPlan [35]=ความคืบหน้า [36]=ปัญหา [37]=หมายเหตุ
+    // data starts at row 2 (row 0=header, row 1=totals)
+    const hdr0 = rows[0] || [];
+    const findCol = kw => hdr0.findIndex(h => (h||"").includes(kw));
+    let cCat = findCol('CAT Document');
+    if(cCat < 0) cCat = findCol('CAT');
+    let cNote = findCol('หมายเหตุ');
+    // MEA ตรวจสอบต้องอยู่ 2 ช่องถัดจาก CAT — ตรวจชื่อกัน header เพี้ยน ไม่ใช่ให้ใช้ค่าเดิม
+    let cMeaS, cMeaE;
+    if(cCat >= 0 && ((hdr0[cCat+1]||"").includes('MEA'))){
+      cMeaS = cCat+1; cMeaE = cCat+2;
+    }else{ cCat = 30; cMeaS = 28; cMeaE = 29; } // fallback: mapping เดิม
+    if(cNote < 0) cNote = 34; // fallback: mapping เดิม
     const sheetMap={};
     for(let i=2;i<rows.length;i++){
       const row=rows[i]; if(!row||row[0]==null||row[0]==="") continue;
@@ -941,8 +956,8 @@ async function syncFromGoogleSheets(){
         inspect_start:norm(row[20]), inspect_end:norm(row[21]),
         cut_plan:num(row[22]), cut_actual:num(row[23]), cut_start:norm(row[24]), cut_end:norm(row[25]),
         rm_start:norm(row[26]), rm_end:norm(row[27]),
-        meacheck_start:norm(row[28]), meacheck_end:norm(row[29]),
-        cat:norm(row[30]), note:row[34]||""
+        meacheck_start:norm(row[cMeaS]), meacheck_end:norm(row[cMeaE]),
+        cat:norm(row[cCat]), note:row[cNote]||""
       };
     }
     if(!Object.keys(sheetMap).length) throw new Error("ไม่พบข้อมูลในชีต (ตรวจสอบว่าชีตชื่อ 'Update Progress')");
