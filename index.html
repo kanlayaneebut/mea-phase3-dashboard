@@ -299,7 +299,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 const TODAY = new Date(); TODAY.setHours(0,0,0,0); // ใช้วันที่ปัจจุบันจริงเสมอ (ไม่ต้อง hardcode แก้มืออีกแล้ว)
 const CONTRACT_END = new Date(2027,3,22);
 const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:10, cat:0};
-const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"ADSS OFC", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
+const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"OFC(อยู่ระหว่างดำเนินการ)", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
 const MS_ORDER = ["submit","approve","adss","inspect","cutover","removal","cat"];
 const MS_GROUP = {submit:"MS2",approve:"MS2",adss:"MS3",inspect:"MS3",cutover:"MS3",removal:"MS3",cat:"CAT"};
 const PHASE_META = {
@@ -370,8 +370,8 @@ function renderKPI(){
     {l:"เส้นทางทั้งหมด",v:total,s:fmt(totalKm)+" กม.",c:"accent"},
     {l:"% รวมทั้งโครงการ",v:overall.toFixed(1)+"%",s:"เฉลี่ยถ่วงน้ำหนัก",c:"blue"},
     {l:"Survey เสร็จ",v:surveyDone+"/"+total,s:(surveyDone/total*100).toFixed(0)+"% (งานเตรียม)",c:""},
-    {l:"อยู่ระหว่างดำเนินการ",v:`<span style="font-size:20px">${instCnt}/${total} เส้นทาง<br>${trimNum(instKm)}/${trimNum(totalKm)} กม.</span>`,s:"",c:"blue"},
-    {l:"เสร็จสมบูรณ์",v:`<span style="font-size:20px">${done}/${total} เส้นทาง<br>${trimNum(doneKm)}/${trimNum(totalKm)} กม.</span>`,s:"",c:"green"},
+    {l:"อยู่ระหว่างดำเนินการ",v:`<span style="font-size:20px;white-space:nowrap">${instCnt}/${total} เส้นทาง<br>${trimNum(instKm)}/${trimNum(totalKm)} กม.</span>`,s:"",c:"blue"},
+    {l:"เสร็จสมบูรณ์",v:`<span style="font-size:20px;white-space:nowrap">${done}/${total} เส้นทาง<br>${trimNum(doneKm)}/${trimNum(totalKm)} กม.</span>`,s:"",c:"green"},
     {l:"ล่าช้า (ธงแดง)",v:late,s:"เกินวันส่งมอบงวด",c:"red"},
     {l:"วันคงเหลือ",v:daysLeft,s:"ถึง 22 เม.ย. 2570",c:"accent"}
   ];
@@ -408,7 +408,7 @@ function renderMSProgress(){
     {ms:"MS1",lbl:"งานสำรวจ (Survey)",wt:"0%",f:r=>r._survey==="done",km:r=>r.km},
     {ms:"MS2",lbl:"Design Submit",wt:"5%",f:r=>stepDone(r,"submit"),km:r=>r.km},
     {ms:"MS2",lbl:"Design Approve",wt:"5%",f:r=>stepDone(r,"approve"),km:r=>r.km},
-    {ms:"MS3",lbl:"ADSS OFC",wt:"50%",f:r=>!!r.adss_end,km:r=>r.adss_actual||0},
+    {ms:"MS3",lbl:"OFC(อยู่ระหว่างดำเนินการ)",wt:"50%",f:r=>!!r.adss_end,km:r=>r.adss_actual||0},
     {ms:"MS3",lbl:"กฟน.ตรวจสอบ",wt:"10%",f:r=>!!r.inspect_end,km:r=>r.adss_actual||0},
     {ms:"MS3",lbl:"Cut Over",wt:"20%",f:r=>stepDone(r,"cutover"),km:r=>r.adss_actual||0},
     {ms:"MS3",lbl:"รื้อถอนสายเก่า",wt:"10%",f:r=>!!r.rm_end,km:r=>r.adss_actual||0},
@@ -432,15 +432,14 @@ function renderMatrix(){
   let body='';
   [1,2,3].forEach(p=>{
     const rs=ROUTES.filter(r=>r.phase===p), n=rs.length||1;
-    // Matrix คิดจากระยะทาง: % = กม.ที่ผ่านขั้น / กม.รวมของงวด (CAT แสดงจำนวนเส้นทาง)
+    // Matrix คิดจากระยะทาง: % = กม.(D) ที่ผ่านขั้น / กม.รวมของงวด (CAT แสดงจำนวนเส้นทาง)
     const totD=rs.reduce((a,r)=>a+(+r.km||0),0);
-    const totR=rs.reduce((a,r)=>a+(+r.adss_actual||0),0);
     const pctD=f=>totD>0?rs.filter(f).reduce((a,r)=>a+(+r.km||0),0)/totD*100:0;
     const sp=pctD(r=>r._survey==="done");
     const vals={
       submit:pctD(r=>!!r.submit),
       approve:pctD(r=>!!r.rev0),
-      adss:totR>0?rs.filter(r=>!!r.adss_end).reduce((a,r)=>a+(+r.adss_actual||0),0)/totR*100:0,
+      adss:pctD(r=>!!r.adss_end),
       inspect:pctD(r=>!!r.inspect_end),
       cutover:pctD(r=>!!r.cut_end),
       removal:pctD(r=>!!r.rm_end)
