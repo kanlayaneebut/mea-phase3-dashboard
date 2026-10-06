@@ -250,7 +250,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
   </div>
 
   <div class="section">
-    <h2>ความคืบหน้าตาม Milestone (MS) / Sub MS <span class="tag">นับเส้นทางที่ผ่านแต่ละขั้น</span></h2>
+    <h2>ความคืบหน้าตาม Milestone (MS) / Sub MS <span class="tag">นับระยะทางที่ผ่านแต่ละขั้น</span></h2>
     <div id="msProgress" class="msprog"></div>
   </div>
 
@@ -299,7 +299,7 @@ footer{text-align:center;color:var(--muted);font-size:11.5px;padding:18px 0}
 const TODAY = new Date(); TODAY.setHours(0,0,0,0); // ใช้วันที่ปัจจุบันจริงเสมอ (ไม่ต้อง hardcode แก้มืออีกแล้ว)
 const CONTRACT_END = new Date(2027,3,22);
 const WEIGHTS = {submit:5, approve:5, adss:50, inspect:10, cutover:20, removal:10, cat:0};
-const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"OFC(อยู่ระหว่างดำเนินการ)", inspect:"กฟน.ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
+const MS_LABELS = {submit:"Design Submit", approve:"Design Approve", adss:"OFC (อยู่ระหว่างดำเนินการ)", inspect:"กฟน. ตรวจสอบ", cutover:"Cut Over", removal:"รื้อถอนสายเก่า", cat:"CAT Document"};
 const MS_ORDER = ["submit","approve","adss","inspect","cutover","removal","cat"];
 const MS_GROUP = {submit:"MS2",approve:"MS2",adss:"MS3",inspect:"MS3",cutover:"MS3",removal:"MS3",cat:"CAT"};
 const PHASE_META = {
@@ -403,24 +403,25 @@ function renderPhases(){
 }
 
 function renderMSProgress(){
-  const total=ROUTES.length;
+  const totalKm=ROUTES.reduce((a,r)=>a+(+r.km||0),0);
   const rows=[
     {ms:"MS1",lbl:"งานสำรวจ (Survey)",wt:"0%",f:r=>r._survey==="done",km:r=>r.km},
     {ms:"MS2",lbl:"Design Submit",wt:"5%",f:r=>stepDone(r,"submit"),km:r=>r.km},
     {ms:"MS2",lbl:"Design Approve",wt:"5%",f:r=>stepDone(r,"approve"),km:r=>r.km},
-    {ms:"MS3",lbl:"OFC(อยู่ระหว่างดำเนินการ)",wt:"50%",f:r=>!!r.adss_end,km:r=>r.adss_actual||0},
-    {ms:"MS3",lbl:"กฟน.ตรวจสอบ",wt:"10%",f:r=>!!r.inspect_end,km:r=>r.adss_actual||0},
-    {ms:"MS3",lbl:"Cut Over",wt:"20%",f:r=>stepDone(r,"cutover"),km:r=>r.adss_actual||0},
-    {ms:"MS3",lbl:"รื้อถอนสายเก่า",wt:"10%",f:r=>!!r.rm_end,km:r=>r.adss_actual||0},
+    {ms:"MS3",lbl:"OFC (อยู่ระหว่างดำเนินการ)",wt:"50%",f:r=>!!r.adss_end,km:r=>r.km},
+    {ms:"MS3",lbl:"กฟน. ตรวจสอบ",wt:"10%",f:r=>!!r.inspect_end,km:r=>r.km},
+    {ms:"MS3",lbl:"Cut Over",wt:"20%",f:r=>stepDone(r,"cutover"),km:r=>r.km},
+    {ms:"MS3",lbl:"รื้อถอนสายเก่า",wt:"10%",f:r=>!!r.rm_end,km:r=>r.km},
     {ms:"CAT",lbl:"CAT Document",wt:"0%",f:r=>!!r.cat,km:r=>r.km}
   ];
   document.getElementById('msProgress').innerHTML=rows.map(x=>{
     const rs=ROUTES.filter(x.f);
     const done=rs.length, km=rs.reduce((a,r)=>a+x.km(r),0);
-    const pct=done/total*100;
+    const pct=totalKm>0?km/totalKm*100:0;
+    const numHtml=x.ms==="CAT"?`${done} เส้นทาง <small>(${pct.toFixed(0)}%)</small>`:`${km.toFixed(2)} กม. <small>(${pct.toFixed(0)}%)</small>`;
     return `<div class="row"><div class="lbl"><b>${x.ms}</b>${x.lbl}<span class="wt">${x.wt}</span></div>
       <div class="track"><span class="${pct===0?'zero':''}" style="width:${pct}%"></span></div>
-      <div class="num">${km.toFixed(2)} <small>(${pct.toFixed(0)}%)</small></div></div>`;
+      <div class="num">${numHtml}</div></div>`;
   }).join('');
 }
 
@@ -445,10 +446,11 @@ function renderMatrix(){
       removal:pctD(r=>!!r.rm_end)
     };
     const catCnt=rs.filter(r=>!!r.cat).length;
+    const wAvg=totD>0?rs.reduce((a,r)=>a+(r._pct||0)*(+r.km||0),0)/totD:0;
     body+=`<tr class="mxrow" onclick="filterByPhase(${p})" title="คลิกเพื่อดูเฉพาะ${PHASE_META[p].name}ในตารางรายเส้นทาง"><td class="l"><b>${PHASE_META[p].name}</b> <span class="mxgo">▾ ดูเส้นทาง</span><br><small style="color:#94a3b8">${n} เส้นทาง</small></td>`;
     body+=`<td><span class="mcell" style="${cellColor(sp)}">${sp.toFixed(0)}%</span></td>`;
     MS_ORDER.forEach(k=>{ if(k==='cat'){ body+=`<td><b>${catCnt}</b></td>`; } else { const pct=vals[k]; body+=`<td><span class="mcell" style="${cellColor(pct)}">${pct.toFixed(0)}%</span></td>`; } });
-    body+=`<td><b>${(rs.reduce((a,r)=>a+r._pct,0)/n).toFixed(1)}%</b></td></tr>`;
+    body+=`<td><b>${wAvg.toFixed(1)}%</b></td></tr>`;
   });
   document.getElementById('matrix').innerHTML=head+body;
 }
