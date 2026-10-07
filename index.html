@@ -357,7 +357,7 @@ function render(){ recompute(); renderKPI(); renderPhases(); renderBatch(); rend
 
 function renderKPI(){
   const total=ROUTES.length, totalKm=ROUTES.reduce((a,r)=>a+r.km,0);
-  const overall=ROUTES.reduce((a,r)=>a+r._pct,0)/total;
+  const overall=totalKm>0?ROUTES.reduce((a,r)=>a+(r._pct||0)*(+r.km||0),0)/totalKm:0;
   const done=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").length;
   const doneKm=ROUTES.filter(r=>r._status==="เสร็จสมบูรณ์").reduce((a,r)=>a+r.km,0);
   const working=ROUTES.filter(r=>r._status==="ติดตั้ง"||r._status==="กำลังสำรวจ").length;
@@ -382,7 +382,8 @@ function renderPhases(){
   let cum=0;
   document.getElementById('phases').innerHTML=[1,2,3].map(p=>{
     const rs=ROUTES.filter(r=>r.phase===p), m=PHASE_META[p];
-    const avg=rs.reduce((a,r)=>a+r._pct,0)/rs.length;
+    const totKm=rs.reduce((a,r)=>a+(+r.km||0),0);
+    const avg=totKm>0?rs.reduce((a,r)=>a+(r._pct||0)*(+r.km||0),0)/totKm:0;
     const km=rs.reduce((a,r)=>a+r.km,0); cum+=km;
     const doneKm=rs.reduce((a,r)=>a+(r.adss_actual||0),0);
     const installing=rs.filter(r=>!!r.adss_start).length, late=rs.filter(r=>r._late).length;
